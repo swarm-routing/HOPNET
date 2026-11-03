@@ -1,0 +1,4 @@
+# org-sync configuration (swarm-routing/.github tools/org-sync).
+kind = "protocol"
+title = "HOPNET"
+dual = ["core/"]
