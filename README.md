@@ -18,7 +18,9 @@ HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colon
 
 What is planned and in progress here: the issues labelled [`epic`](https://github.com/swarm-routing/HOPNET/issues?q=label%3Aepic). An epic's open sub-issues carry a `priority:*` and a `model:*` label, so a contributor or an AI agent can pick one up ([how issues work](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md#issues)). The whole org's plan: the [roadmap](https://github.com/swarm-routing/.github/blob/main/ROADMAP.md#epics).
 
-No open epic: the work here is tracked as single issues.
+| Epic | Status | Sub-issues closed |
+|------|--------|-------------------|
+| [#3](https://github.com/swarm-routing/HOPNET/issues/3) HOPNET as a standalone hexagonal protocol (later: not scheduled) | Planned | 0 / 2 |
 
 <!-- epics:end -->
 
