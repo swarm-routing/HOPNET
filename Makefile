@@ -22,12 +22,10 @@ help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build: ## build what this repo ships
-	@[ -d ns3 ] || { echo "make build: no ns3/ module yet (it lands with the first code PR)"; exit 0; }; \
-	  docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib hopnet=/src/ns3
+	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib hopnet=/src/ns3; else echo "make build: no ns3/ module yet"; fi
 
 test: ## the fast tests CI runs on every PR
-	@[ -d ns3 ] || { echo "make test: no ns3/ module yet (it lands with the first code PR)"; exit 0; }; \
-	  docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib --test hopnet=/src/ns3
+	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib --test hopnet=/src/ns3; else echo "make test: no ns3/ module yet"; fi
 
 lint: ## static checks, no changes
 	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format --dry-run --Werror
