@@ -1,6 +1,6 @@
 # Security Policy
 
-`swarm-routing/hopnet` is research code for network simulation. This document records its
+`swarm-routing/HOPNET` is research code for network simulation. This document records its
 security posture honestly; it promises nothing the code does not do. The
 org-wide policy is [swarm-routing/.github SECURITY.md](https://github.com/swarm-routing/.github/blob/main/SECURITY.md).
 
