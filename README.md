@@ -12,7 +12,7 @@
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
 
-**Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) is written and tested; the inter-zone half and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
+**Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) and the inter-zone half's route discovery and data forwarding (bordercasting, InterRT) are written and tested; the local repair and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
 
 ## Epics
 

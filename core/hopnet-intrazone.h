@@ -47,7 +47,7 @@ public:
     /// into cell (from, source), the first copy of (source, seq) re-broadcast
     /// while Hops is left, else turned into a backward ant. Backward ants:
     /// eq. 4.3 into cell (from, source), then on along Path. Other types are
-    /// the inter-zone half's (not in this slice): Drop.
+    /// the inter-zone half's (InterZone::onReceive, which calls this): Drop.
     Decision onReceive(const Ant& ant, NodeAddress from);
 
     /// A unicast transmission to `neighbour` failed (the adapter reports MAC
@@ -72,11 +72,17 @@ public:
     NodeAddress self() const { return self_; }
     /// The sequence number of the last ant this node originated.
     std::uint32_t lastSeq() const { return seq_; }
+    /// A fresh sequence number for an ant this node sends: one counter for
+    /// every forward and backward ant, internal or external ([W07] p. 25).
+    std::uint32_t nextSeq() { return ++seq_; }
+
+    /// An ant arrived from `neighbour`: its row's loss timer restarts (any ant
+    /// counts, the inter-zone ones too; fidelity, neighbour discovery row).
+    void heard(NodeAddress neighbour);
 
 private:
     Decision onInternalForward(const Ant& ant, NodeAddress from);
     Decision onInternalBackward(const Ant& ant, NodeAddress from);
-    void heard(NodeAddress neighbour);
 
     Config config_;
     NodeAddress self_;

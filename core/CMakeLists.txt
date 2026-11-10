@@ -58,6 +58,9 @@ target_include_directories(swarm_core_primitives PUBLIC ${SWARM_CORE_DIR})
 
 add_library(hopnet_core STATIC
   hopnet-ant.cc
+  hopnet-data.cc
+  hopnet-interzone-table.cc
+  hopnet-interzone.cc
   hopnet-intrazone-table.cc
   hopnet-intrazone.cc
 )
@@ -67,6 +70,7 @@ target_compile_options(hopnet_core PRIVATE ${HOPNET_WARNINGS})
 
 add_executable(hopnet_core_tests
   test/run-core-tests.cc
+  test/test-interzone.cc
   test/test-intrazone.cc
   test/test-wire.cc
 )

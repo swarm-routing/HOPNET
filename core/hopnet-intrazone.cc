@@ -46,7 +46,7 @@ Decision IntraZone::onReceive(const Ant& ant, NodeAddress from) {
     case AntType::Backward:
         return onInternalBackward(ant, from);
     default:
-        return Decision::drop();  // the inter-zone half, a later slice
+        return Decision::drop();  // the inter-zone half's: InterZone::onReceive
     }
 }
 
@@ -55,9 +55,10 @@ Decision IntraZone::onInternalForward(const Ant& ant, NodeAddress from) {
     // malformed ant would deposit nonsense: both are dropped untouched. A hop
     // budget above the zone radius ([W07] p. 25) would let one ant flood past
     // the zone, so it is malformed too.
-    if (ant.source == kInvalidAddress || ant.path.empty() || ant.path.back().node != from ||
-        ant.path.hops().front().node != ant.source || ant.path.contains(self_) || ant.hops < 1 ||
-        ant.hops > config_.zoneRadius || !positiveFinite(ant.time)) {
+    if (ant.source == kInvalidAddress || ant.target != kInvalidAddress || ant.path.empty() ||
+        ant.path.back().node != from || ant.path.hops().front().node != ant.source ||
+        ant.path.contains(self_) || ant.hops < 1 || ant.hops > config_.zoneRadius ||
+        !positiveFinite(ant.time)) {
         return Decision::drop();
     }
     // Eq. 4.1 at v_j = self from v_i = from: cell (from, S) gains
@@ -87,8 +88,9 @@ Decision IntraZone::onInternalForward(const Ant& ant, NodeAddress from) {
 }
 
 Decision IntraZone::onInternalBackward(const Ant& ant, NodeAddress from) {
-    if (ant.source == kInvalidAddress || ant.source == self_ || ant.path.empty() ||
-        ant.path.back().node != self_ || ant.hops < 1 || !positiveFinite(ant.time)) {
+    if (ant.source == kInvalidAddress || ant.source == self_ || ant.target != kInvalidAddress ||
+        ant.path.empty() || ant.path.back().node != self_ || ant.hops < 1 ||
+        !positiveFinite(ant.time)) {
         return Decision::drop();
     }
     // Eq. 4.3 with T' = T(S, D) - T(S, v_k) (#5 (a)): the time from here to
