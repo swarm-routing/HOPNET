@@ -52,33 +52,33 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | IntraRT `SeqNo` stops the same forward ant from updating the table twice | [W07] p. 25 | Per-cell last sequence number; a repeat is ignored | as written |
 | Ant header: Source, Destination, SequenceNo, Type, Hops, Path, Time; five types: 0 internal forward, 1 external forward, 2 backward, 3 notification, 4 error | [W07] p. 25 | One POD ant header, little-endian, leading version byte (org rule 3); the field widths are ours | as written (layout: repo choice under org rule 3) |
 | (Source, SequenceNo) identifies an ant generation; a node increments its sequence number for every forward or backward ant it sends; duplicates are discarded | [W07] p. 25, p. 27 | Bounded (source, seq) history (org rule 7) | as written |
-| Internal forward ants are sent periodically by every node to all its neighbours, with Hops set to the zone radius; they sample paths inside the zone | [W07] §4.1, p. 24, p. 25 | Periodic timer through an injected timer port; Hops = radius | as written (period open, below) |
-| How an internal forward ant moves past the first hop (copied to every neighbour, or one next hop chosen by pheromone) | [W07] p. 24, p. 26 | To be chosen | unknown: "sends out internal forward ants periodically to all its neighbors" covers the first hop only; the next-hop rule that would govern later hops is not given (row below) |
+| Internal forward ants are sent periodically by every node to all its neighbours, with Hops set to the zone radius; they sample paths inside the zone | [W07] §4.1, p. 24, p. 25 | Periodic timer through an injected timer port; Hops = radius | as written (period: a repo choice, below) |
+| How an internal forward ant moves past the first hop (copied to every neighbour, or one next hop chosen by pheromone) | [W07] p. 24, p. 26 | To be chosen | unknown: "sends out internal forward ants periodically to all its neighbors" covers the first hop only; with the next-hop rule now a repo choice (row below), whether later hops copy the ant or pick one next hop by that rule is a reading to pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
 | Internal backward ant returns along the forward ant's Path to its source | [W07] §4.1, p. 26 | Unicast back along the recorded path | as written |
-| Neighbour discovery by the internal forward and backward ants themselves; no separate hello message is described | [W07] p. 23 | Neighbours learned from ant traffic only | unknown: [W07] does not say how a node learns its neighbours before its first ant returns, nor when a silent neighbour is dropped |
-| Forward-ant pheromone update at the node v_j an ant moves to from v_i, entry (v_i, S): eq. 4.1, φ += ε / (T(v_S, v_i) + w(v_i, v_j)), the "source update" of Islam et al. ([W07] ref. [19]) | [W07] eq. 4.1, p. 26 | Same law | as written (ε and the measure of w open, below) |
+| Neighbour discovery by the internal forward and backward ants themselves; no separate hello message is described | [W07] p. 23 | Neighbours learned from ant traffic only | unknown: [W07] does not say how a node learns its neighbours before its first ant returns, nor when a silent neighbour is dropped. A reading to pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) before code |
+| Forward-ant pheromone update at the node v_j an ant moves to from v_i, entry (v_i, S): eq. 4.1, φ += ε / (T(v_S, v_i) + w(v_i, v_j)), the "source update" of Islam et al. ([W07] ref. [19]) | [W07] eq. 4.1, p. 26 | Same law | as written (ε: a repo choice, below; the measure of w open, below) |
 | Evaporation: every other neighbour's entry in the same column is multiplied by (1 − E), eq. 4.2; it runs on each ant update, not on a timer | [W07] eq. 4.2, p. 26 | Applied inside the update, no periodic decay | as written |
 | Each ant accumulates the path time T(v_S, v_i) + w(v_i, v_j) as it moves | [W07] p. 26 | Time field of the ant header | as written |
-| Backward-ant update at v_b for the destination column: eq. 4.3, φ(v_b, v_D) += ε / T′ with T′ = T(v_k, v_D) − T(v_k, v_b); other neighbours in column D decay by eq. 4.2 | [W07] eq. 4.3, p. 26 | Same law | unknown: the subscripts of T′ admit two readings (the time still to go from v_b to D, or the time already covered); [W07] says only that it puts more pheromone "on the path that is closer to the destination". Pre-register the reading |
-| Next-hop selection rule (for ants and for data) | [W07] p. 25, p. 26 | To be chosen | unknown: p. 25 announces "the pheromone (φ) update and node selection procedure", but only the updates (eqs. 4.1–4.3) follow; no selection rule appears in [W07]. The first thing to look for in [W09] |
+| Backward-ant update at v_b for the destination column: eq. 4.3, φ(v_b, v_D) += ε / T′ with T′ = T(v_k, v_D) − T(v_k, v_b); other neighbours in column D decay by eq. 4.2 | [W07] eq. 4.3, p. 26 | Same law | unknown: the subscripts of T′ admit two readings (the time still to go from v_b to D, or the time already covered); [W07] says only that it puts more pheromone "on the path that is closer to the destination". Pre-register the reading on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
+| Next-hop selection rule (for ants and for data) | [W07] p. 25, p. 26 | Standard ACO random-proportional (roulette) selection over the IntraRT column of the destination: neighbour n is chosen with probability φ(n, D)^β / Σ_m φ(m, D)^β over the neighbours m with φ(m, D) > 0, β = 20 for ants and data (Parameters). The column is the packet's current target inside the zone: the destination for intra-zone data; for an external forward ant, the peripheral node it is being sent to while bordercasting, then the destination once a peripheral node finds it in its zone. Inter-zone data is source-routed along its InterRT path and selects nothing. Internal forward ants carry no destination, so which column (if any) they would select on past the first hop is part of the open reading in the internal-ant row above. Through `swarm-core`'s `swarm-selection` (`selectNextHop`, weights (φ / φ_best)^β, the same distribution without overflow; swarm-routing/ns3-swarm-core#27), or the same rule written in `core/` if that is not merged first | deviation: repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). p. 25 announces "the pheromone (φ) update and node selection procedure", but only the updates (eqs. 4.1–4.3) follow; no selection rule appears in [W07]. The rule here is the standard ACO one, not HOPNET's; revisit it if [W09] gives the rule |
 | Data to a destination inside the zone: found in the IntraRT, and a route always exists because the table is proactive | [W07] p. 25 | IntraRT lookup | as written; how data picks among the neighbours is the row above |
 | A data packet is dropped at a node whose pheromone toward the destination is zero on every link | [W07] p. 34 | Drop and count it | as written |
 | InterRT: Destination, SeqNo, Path, Expire; a source route kept until it expires | [W07] p. 27 | Source-route cache with an expiry time | as written (expiry open, below) |
 | Data to a destination outside the zone: an unexpired InterRT path is used at once and the packet is source-routed ("self-directed") along it; otherwise route discovery starts | [W07] p. 27 | Source route carried in our data header | as written |
 | Route discovery between zones (bordercasting): the source sends an external forward ant to each of its peripheral nodes along IntraRT paths; a peripheral node looks the destination up in its IntraRT, then its InterRT, and otherwise forwards the ant to its own peripheral nodes; repeated until the destination is found | [W07] p. 27, p. 28, Fig. 4.1 | Same | as written |
-| Query control: a peripheral node does not bordercast back toward the zone the ant came from, so ants move away from the source | [W07] p. 28, Fig. 4.1 | To be chosen | unknown: the worked example (D does not send to S and A) states the effect, not the rule. Which peripheral nodes are excluded (those in the previous bordercaster's zone, those on the ant's Path, or those the previous node also reaches) must be pre-registered |
+| Query control: a peripheral node does not bordercast back toward the zone the ant came from, so ants move away from the source | [W07] p. 28, Fig. 4.1 | To be chosen | unknown: the worked example (D does not send to S and A) states the effect, not the rule. Which peripheral nodes are excluded (those in the previous bordercaster's zone, those on the ant's Path, or those the previous node also reaches) must be pre-registered on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
 | An external forward ant dies at a peripheral node with no peripheral nodes of its own to send to | [W07] p. 28 | Drop | as written |
-| External forward ants carry no hop limit (Hops left blank) | [W07] p. 25 | No TTL beyond duplicate suppression | as written; a safety cap is a repo choice (org rule 7) |
+| External forward ants carry no hop limit (Hops left blank) | [W07] p. 25 | No TTL beyond duplicate suppression; Path capped (Parameters) | as written; the Path cap is a repo choice (org rule 7) |
 | Each node a bordercast passes appends itself to Path; the peripheral node that finds the destination in its zone sends the ant on along its IntraRT path | [W07] p. 28 | Same | as written |
-| At the destination: if the ant's sequence number is greater than the one its InterRT holds "for destination", the ant becomes a backward ant (type 1 → 2) and returns along Path; otherwise it dies | [W07] p. 27 | One backward ant per (source, seq) | unknown: which InterRT entry the destination compares against (the source's, as the purpose suggests, or literally the destination's own) is not settled by the text. Pre-register |
+| At the destination: if the ant's sequence number is greater than the one its InterRT holds "for destination", the ant becomes a backward ant (type 1 → 2) and returns along Path; otherwise it dies | [W07] p. 27 | One backward ant per (source, seq) | unknown: which InterRT entry the destination compares against (the source's, as the purpose suggests, or literally the destination's own) is not settled by the text. Pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
 | The source inserts the backward ant's path in its InterRT and sends data along it | [W07] p. 27 | Same | as written |
-| Whether external backward ants update any pheromone | [W07] p. 27 | To be chosen | unknown: §4.2 describes only the InterRT insertion |
+| Whether external backward ants update any pheromone | [W07] p. 27 | To be chosen | unknown: §4.2 describes only the InterRT insertion. Pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
 | Multiple paths: HOPNET "is able to find multiple paths" from a source to a destination | [W07] p. 28 | To be chosen | unknown: how many InterRT paths are kept per destination and how data chooses among them is not stated |
 | Intra-zone link failure: repaired by the proactive IntraRT maintenance after a short period | [W07] §4.3 | Nothing beyond the periodic ants and eq. 4.2 | as written |
-| Inter-zone link failure: the upstream node buffers packets and repairs locally by sending a forward ant to the destination | [W07] §4.3, p. 28, p. 29, Fig. 4.3 | Local repair with a bounded buffer | as written (buffer and wait open, below) |
+| Inter-zone link failure: the upstream node buffers packets and repairs locally by sending a forward ant to the destination | [W07] §4.3, p. 28, p. 29, Fig. 4.3 | Local repair with a bounded buffer | as written (buffer and wait: repo choices, below) |
 | Repair succeeds: buffered packets go on the new route; a notification ant (type 3) tells the source, nodes it visits remove invalid InterRT routes, and the source replaces its path | [W07] p. 29, Fig. 4.2 | Same | as written |
-| Repair fails (no backward ant "after a period of time"): an error ant (type 4) goes to the source, which restarts route discovery if it still needs the route | [W07] p. 29, p. 30, Fig. 4.3 | Same | as written (the period open, below) |
-| How a broken link is detected | [W07] §4.3 | MAC transmit failure from the adapter, through an `ILinkState` port | unknown: [W07] names the event ("a link being otherwise broken"), not its detection |
+| Repair fails (no backward ant "after a period of time"): an error ant (type 4) goes to the source, which restarts route discovery if it still needs the route | [W07] p. 29, p. 30, Fig. 4.3 | Same | as written (the period: a repo choice, below) |
+| How a broken link is detected | [W07] §4.3 | MAC transmit failure from the adapter, through an `ILinkState` port | unknown: [W07] names the event ("a link being otherwise broken"), not its detection. Pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) |
 
 ## Parameters
 
@@ -89,30 +89,33 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | Zone radius in the AODV comparisons (Fig. 5.1–5.3, 5.12–5.14) | — | unknown | Not stated |
 | Internal forward ant hop limit | the zone radius | [W07] p. 25 | |
 | External forward ant hop limit | none | [W07] p. 25 | "We leave this field blank"; duplicates bound the flood |
-| Internal forward ant period | — | unknown | "periodically" ([W07] p. 24); the thesis's main proactive rate |
-| ε, the deposit scale in eqs. 4.1 and 4.3 | — | unknown | "a run time parameter provided by the user" ([W07] p. 26), no value |
+| Internal forward ant period | 1 s | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): the internal ants are HOPNET's only neighbour-discovery traffic, the role of AntHocNet's hello; AntHocNet's `Config::helloInterval` default is 1 s | [W07] p. 24 says only "periodically"; the thesis's main proactive rate |
+| ε, the deposit scale in eqs. 4.1 and 4.3 | 1 | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): a cell holds only deposits and multiplicative decay, so scaling ε scales every φ alike and leaves φ^β / Σ φ^β unchanged; ε sets units only (any absolute threshold on φ must scale with it) | "a run time parameter provided by the user" ([W07] p. 26), no value |
 | Evaporation rate E, range found suitable | 0.20–0.25 | [W07] p. 33 | "We found the evaporation rate of 20% to 25% to be suitable" |
 | Evaporation rate E, value used in the figures | — | unknown | Only the range is given |
+| Evaporation rate E, this implementation | 0.20 | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): the lower end of the 20–25 % range [W07] p. 33 found suitable, so the slowest rate the thesis endorses (0.10 was too slow: ants cycled) | Revisit if [W09] gives the value |
 | Evaporation rate E, a value that fails | 0.10 | [W07] p. 33 | Too slow: "the ants travel in a cycle" |
-| Edge time w(v_i, v_j) | — | unknown | "the time period on each edge" ([W07] p. 26); how it is measured (per-hop delay of the ant, a MAC estimate) is not given |
-| Initial pheromone of a new IntraRT cell | — | unknown | |
-| InterRT Expire time | — | unknown | "for a certain period of time" ([W07] p. 27) |
-| Local-repair wait before the error ant | — | unknown | "after a period of time" ([W07] p. 29) |
-| Local-repair buffer (packets, time) | — | unknown | Must be bounded (org rule 7) |
-| Route-discovery retry policy at the source | — | unknown | Only "re-initiate" after an error ant ([W07] p. 29) |
-| Duplicate-suppression history size | — | unknown | Must be bounded (org rule 7) |
+| Edge time w(v_i, v_j) | — | unknown | "the time period on each edge" ([W07] p. 26); how it is measured (per-hop delay of the ant, a MAC estimate) is not given. To be set in [#5](https://github.com/swarm-routing/HOPNET/issues/5) with its reason |
+| Initial pheromone of a new IntraRT cell | none (0 until the first deposit) | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): the cell is created by its first eq. 4.1 or 4.3 deposit, so there is no extra constant, and a neighbour with no pheromone is never a candidate, consistent with the drop rule of [W07] p. 34 | [W07] gives no value |
+| Next-hop selection exponent β (ants and data) | 20 | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::betaAnts` and `Config::betaData` defaults (20), sourced there to Ducatelle's 2007 thesis; [W07] gives no selection rule (Mechanisms) | One value for ants and data, as AntHocNet; [DDG04] §3.2–§3.3 instead squares pheromone for data only. Revisit with the rule if [W09] gives it |
+| InterRT Expire time | — | unknown | "for a certain period of time" ([W07] p. 27); AntHocNet has no comparable source-route cache. To be set in [#5](https://github.com/swarm-routing/HOPNET/issues/5) with its reason |
+| Local-repair wait before the error ant | 5 × the lost path's estimated delay; 1 s when there is no estimate | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::repairWaitFactor` (5, from [DDG04] §3.4) and `Config::repairTimeout` (1 s); the estimate is the Time the ants carried over the lost path | [W07] p. 29 says only "after a period of time" |
+| Local-repair buffer (packets, time) | 64 packets, 3 s per packet | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's ns-3 pending queue (`m_queue(64, Seconds(3))`, the `QueueTimeout` default) | Bounded (org rule 7); [W07] gives no size |
+| Route-discovery retry policy at the source | at most one discovery per destination per 1 s, while data for it waits | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::reactiveRetryInterval` (1 s) | [W07] p. 29 says only "re-initiate" after an error ant |
+| Duplicate-suppression history size | 4096 (source, seq) entries | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::maxHistory` | Bounded (org rule 7); [W07] gives no size |
+| Path cap of an ant (external forward ants carry no hop limit) | 100 nodes | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::maxPathLength`; a safety bound only (org rule 7), above any path in the scenarios here | [W07] p. 25 leaves the external ant's Hops blank |
 | Simulator | GloMoSim (on PARSEC) | [W07] §5.1 | Version not stated; HOPNET implemented at the network layer |
 | AODV base scenario: nodes, area | 50, 3000 m × 1000 m | [W07] §5.2 | Varied 10–190 nodes in Fig. 5.1–5.3 (area for those not restated) |
 | AODV base scenario: mobility | random waypoint, speed U[0, 10] m/s | [W07] §5.2 | Pause time not stated for the base scenario |
 | AODV base scenario: simulated time | 900 s | [W07] §5.2 | |
 | AODV base scenario: traffic | 20 CBR sources, one 64-byte packet every 3 s | [W07] §5.2 | Start times not stated |
 | AODV base scenario: radio | 802.11, range 250 m, 2 Mbit/s | [W07] §5.2 | Propagation model not stated |
-| Runs or seeds per point, confidence intervals | — | unknown | Not stated anywhere in ch. 5; the figures show single curves without error bars |
+| Runs or seeds per point, confidence intervals | — | unknown | Not stated anywhere in ch. 5; the figures show single curves without error bars. This implementation's runs: ≥ 20 paired seeds per point (org rule 6) |
 | AntHocNet comparison: base scenario | 50 nodes, 1500 m × 300 m, random waypoint up to 20 m/s, pause 30 s, 900 s | [W07] p. 36 | "We used the same simulation set up used in AntHocNet [5]" |
 | AntHocNet comparison: area sweep | 1500 m to 2500 m long side, 300 m short side | [W07] p. 36, Fig. 5.7 | As [DDG04] Fig. 1 |
 | AntHocNet comparison: pause sweep | 0, 10, 30, 70, 100, 200, …, 900 s | [W07] Fig. 5.8, Fig. 5.9, Fig. 5.10 | The area of this sweep is not stated ([DDG04] §4.2 used 2500 m × 300 m) |
-| AntHocNet comparison: scaling sweep | scaling factor 1 to 2; edges × factor, nodes × factor², up to 200 nodes in 3000 m × 1000 m | [W07] p. 39, Fig. 5.11 | [W07] starts from 1500 m × 300 m, which × 2 gives 3000 m × 600 m, not the stated end point; [DDG04] §4.2 starts from 1500 m × 500 m, which does. Reading for the anchor: [DDG04]'s |
-| AntHocNet comparison: traffic, radio range, propagation, MAC | — | unknown | Not restated in [W07]. [DDG04] §4.1: 20 CBR sources, one 64-byte packet per second, starting in [0, 180] s; two-ray propagation; 300 m range; 2 Mbit/s; 802.11 DCF. [W07]'s own base scenario uses 250 m and one packet every 3 s |
+| AntHocNet comparison: scaling sweep | scaling factor 1 to 2; edges × factor, nodes × factor², up to 200 nodes in 3000 m × 1000 m | [W07] p. 39, Fig. 5.11 | [W07] starts from 1500 m × 300 m, which × 2 gives 3000 m × 600 m, not the stated end point; [DDG04] §4.2 starts from 1500 m × 500 m, which does. The anchor uses [DDG04]'s start area, 1500 m × 500 m (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)); [W07]'s 1500 m × 300 m is recorded as the thesis's inconsistency |
+| AntHocNet comparison: traffic, radio range, propagation, MAC | — | unknown | Not restated in [W07]. [DDG04] §4.1: 20 CBR sources, one 64-byte packet per second, starting in [0, 180] s; two-ray propagation; 300 m range; 2 Mbit/s; 802.11 DCF. [W07]'s own base scenario uses 250 m and one packet every 3 s. The anchor here uses [DDG04]'s values (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)) |
 | AntHocNet implementation and its parameters | — | unknown | [W07] names none: no simulator port, no source, no parameter. See *The comparison the thesis ran* |
 | ZRP comparison scenario | 200 nodes, 5000 m × 1250 m, random waypoint 20 m/s, range 250 m | [W07] p. 42, Fig. 5.15 | From [W07] ref. [45]; ZRP is not an org arm |
 
@@ -168,28 +171,37 @@ reproduced as the thesis measured it:
 
 - *Scenario*: recoverable, as [DDG04] §4.1–§4.2's scaling experiment, which
   the thesis claims to reuse. Where [W07] and [DDG04] disagree (start area,
-  range, traffic), take [DDG04]'s values as a repo choice and say so.
+  range, traffic) or [W07] is silent, [DDG04]'s values are used: 1500 m ×
+  500 m start area, 300 m range, one packet per second (repo choice,
+  maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). [W07]'s 1500 m × 300 m start
+  area is inconsistent with its own stated end point and is recorded, not used.
 - *AntHocNet*: `swarm-routing/AntHocNet` at a pinned commit, whose reference
   paper is [DDG04]. That is closer to the AntHocNet in [W07]'s figures than
   anything [W07] itself specifies, but it is not the same implementation and
   not the same simulator; agreement is judged on direction, not values.
-- *HOPNET*: blocked on its own unknowns, chiefly the next-hop selection rule,
-  the internal ant period, ε, the edge-time measure, the query-control rule
-  and the InterRT expiry. Each needs [W09] or a pre-registered repo choice
-  before `core/`.
+- *HOPNET*: the next-hop selection rule, the internal ant period, ε, the
+  evaporation rate and the bounded sizes are now repo choices
+  (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)); the next-hop rule is a declared
+  deviation, standard ACO roulette selection, to revisit if [W09] gives
+  HOPNET's own. Still open before `core/`: the edge-time measure, the InterRT
+  expiry (both to be set in [#5](https://github.com/swarm-routing/HOPNET/issues/5) with a reason) and the readings listed
+  under *Unknowns*, each pre-registered on [#5](https://github.com/swarm-routing/HOPNET/issues/5).
 
 So the arm does **not** ship as an infeasibility verdict on the AntHocNet
 side: the anchor below is testable. If [W09] is read and still leaves the
-selection rule open, the HOPNET implemented here is a reconstruction, and the
+selection rule open (or until it is read), the HOPNET implemented here is a reconstruction, and the
 anchor tests that reconstruction; say so wherever its numbers appear.
 
 ## Anchor candidate
 
+Accepted as the anchor (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). AntHocNet is pinned at a commit stated with each run.
+
 | Trend | Scenario | Metric | Comparators | Source |
 |---|---|---|---|---|
-| HOPNET (zone radius 2) delivers more than AntHocNet at every scaling factor, and its lead grows with scale: about +0.01 at factor 1, about +0.035 at factor 2 in the thesis | [DDG04]'s scaling experiment, which [W07] reuses: scaling factor s ∈ {1, 1.25, 1.5, 1.75, 2}, 50·s² nodes in (1500·s) m × (500·s) m, random waypoint up to 20 m/s, pause 30 s, 900 s, 20 CBR sources of one 64-byte packet per second, 802.11, 2 Mbit/s, 300 m range (the [DDG04] values where [W07] is silent or inconsistent: repo choice) | Paired by seed, HOPNET minus AntHocNet delivery ratio, ≥ 20 seeds per point: 95 % CI above zero at s = 2, and the s = 2 delta larger than the s = 1 delta (paired difference of deltas, CI above zero). Delay and overhead reported, not gated ([W07] gives neither for this experiment) | AntHocNet (`swarm-routing/AntHocNet` at a pinned commit, defaults stated with the run) | [W07] Fig. 5.11, p. 39; [DDG04] §4.2, Fig. 3 |
+| HOPNET (zone radius 2) delivers more than AntHocNet at every scaling factor, and its lead grows with scale: about +0.01 at factor 1, about +0.035 at factor 2 in the thesis | [DDG04]'s scaling experiment, which [W07] reuses: scaling factor s ∈ {1, 1.25, 1.5, 1.75, 2}, 50·s² nodes rounded to the nearest integer, halves up (50, 78, 113, 153, 200: a repo choice, [DDG04] §4.2 gives only the end points) in (1500·s) m × (500·s) m, random waypoint up to 20 m/s, pause 30 s, 900 s, 20 CBR sources of one 64-byte packet per second, 802.11, 2 Mbit/s, 300 m range (the [DDG04] values where [W07] is silent or inconsistent: repo choice) | Paired by seed, HOPNET minus AntHocNet delivery ratio, ≥ 20 seeds per point: 95 % CI above zero at s = 2, and the s = 2 delta larger than the s = 1 delta (paired difference of deltas, CI above zero). Delay and overhead reported, not gated ([W07] gives neither for this experiment) | AntHocNet (`swarm-routing/AntHocNet` at a pinned commit, defaults stated with the run) | [W07] Fig. 5.11, p. 39; [DDG04] §4.2, Fig. 3 |
 
-Not gated, recorded as checks on the reconstruction: Fig. 5.7 (HOPNET below
+Not gated, recorded as checks on the reconstruction (the two thesis results
+that cut against HOPNET): Fig. 5.7 (HOPNET below
 AntHocNet as the area lengthens) and Fig. 5.10 (radius 4 ahead of AntHocNet
 for pause 70–400 s). A HOPNET that beats AntHocNet in Fig. 5.11's scenario
 but not where the thesis says it lost is worth a second look before anyone
@@ -197,19 +209,25 @@ calls the anchor met.
 
 ## Unknowns
 
-The rows marked `unknown` above, in the order they block `core/`:
+Settled as repo choices by the maintainer decision of 2026-11-10
+([#4](https://github.com/swarm-routing/HOPNET/issues/4)), each with its reason
+in the rows above: the next-hop selection rule (a declared deviation: ACO
+roulette, β = 20), the internal forward ant period, ε, the evaporation rate
+used, the initial pheromone, the local-repair wait and buffer, the discovery
+retries, the history size and the Path cap; the scenario values where [W07] is
+silent or inconsistent ([DDG04]'s); and the anchor.
 
-1. Next-hop selection rule for ants and data (announced on [W07] p. 25, never given).
-2. How internal forward ants move beyond the first hop.
-3. Internal forward ant period.
-4. ε (eqs. 4.1, 4.3) and the edge-time measure w.
-5. The reading of T′ in eq. 4.3.
-6. The query-control rule (which peripheral nodes a bordercast skips).
-7. Which sequence number the destination compares an external forward ant with.
-8. Whether external backward ants deposit pheromone; how many InterRT paths are kept and used.
-9. Initial pheromone, InterRT expiry, local-repair wait and buffer, discovery retries, history sizes.
-10. Neighbour discovery and loss, and link-break detection.
-11. The evaporation rate actually used (0.20–0.25 found suitable).
-12. The thesis's AntHocNet implementation and parameters, its traffic and radio settings, and its runs per point.
+Still open, in the order they block `core/`:
 
-[W09] is the first place to look for 1–11.
+1. Readings to pre-register on [#5](https://github.com/swarm-routing/HOPNET/issues/5) before code:
+   - the T′ term of eq. 4.3 (time still to go, or time already covered);
+   - the bordercast skip rule (which peripheral nodes a bordercast excludes);
+   - which sequence number the destination compares an external forward ant with;
+   - whether external backward ants deposit pheromone, and how many InterRT paths are kept and used;
+   - neighbour discovery and loss, and link-break detection;
+   - how internal forward ants move beyond the first hop (copied, or one next hop by the selection rule).
+2. Constants to set in [#5](https://github.com/swarm-routing/HOPNET/issues/5) with a stated reason: the edge-time measure w and the InterRT expiry.
+3. Facts about the thesis that stay unknown: the evaporation rate its figures used, the zone radius of its AODV comparisons, its AntHocNet implementation and parameters, its traffic and radio settings for that comparison, and its runs per point.
+
+[W09] is the first place to look for every row above and for HOPNET's own
+next-hop rule.
