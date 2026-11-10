@@ -1,0 +1,54 @@
+# Copyright (c) 2026 Daniel Joppi (https://github.com/swarm-routing)
+# SPDX-License-Identifier: GPL-2.0-only
+name: Core
+
+# core/ on its own (no ns-3 tree): the org's strict warnings as errors, the
+# unit tests under ctest, the same under ASan + UBSan, and clang-format with the
+# org style. swarm-core's primitives come from the commit core/CMakeLists.txt
+# pins (SWARM_CORE_REF). The ns-3 module joins reusable-ns3-ci.yml once ns3/
+# exists. Check names (stable, for required_checks): core-test, core-format.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build (strict warnings as errors) and test
+        run: |
+          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/core -j
+          ctest --test-dir build/core --output-on-failure
+      - name: Build and test under ASan + UBSan
+        run: |
+          cmake -S core -B build/sanitized -DCMAKE_BUILD_TYPE=Debug -DHOPNET_CORE_SANITIZE=ON \
+            -DSWARM_CORE_DIR="$PWD/build/core/_deps/swarm_core_src-src/core"
+          cmake --build build/sanitized -j
+          ctest --test-dir build/sanitized --output-on-failure
+
+  core-format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Org .clang-format unless the repo ships its own
+        run: |
+          [ -f .clang-format ] || curl -fsSL -o .clang-format \
+            https://raw.githubusercontent.com/swarm-routing/.github/main/.clang-format
+      - name: clang-format-18 --dry-run -Werror
+        run: |
+          files=$(git ls-files '*.h' '*.cc' '*.cpp' '*.hpp')
+          [ -z "$files" ] && { echo "no C++ files"; exit 0; }
+          # shellcheck disable=SC2086
+          clang-format-18 --dry-run -Werror $files
