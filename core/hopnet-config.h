@@ -76,8 +76,8 @@ struct Config {
     /// Hops an external ant or a data packet may travel in all, bordercasters
     /// and transit relays alike: the Path cap's 100, which is what AntHocNet's
     /// maxPathLength bounds (every hop). Fidelity "Hops an external ant or a
-    /// data packet may travel": proposed on #5 (g) (sheet review point 2),
-    /// awaiting the maintainer.
+    /// data packet may travel": accepted on #5 (g) (sheet review point 2),
+    /// maintainer decision 2026-11-10.
     std::size_t maxHopsTravelled() const { return maxPathLength; }
 
     /// Seconds without an ant after which a neighbour is dropped.

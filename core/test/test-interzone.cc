@@ -566,7 +566,7 @@ void TestInterRtHitAtPeripheral(Checker& c) {
 }
 
 void TestTravelledBound(Checker& c) {
-    // Sheet review point 2, proposed on #5: Config::maxHopsTravelled().
+    // Sheet review point 2, accepted on #5: Config::maxHopsTravelled().
     Config cfg;
     cfg.maxPathLength = 6;
     FakeClock clock;

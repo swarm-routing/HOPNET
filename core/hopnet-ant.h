@@ -19,7 +19,7 @@
 // p. 28, Fig. 4.1), and between two of them the ant is routed hop by hop
 // toward the next one (fidelity, selection row), so every transit relay must
 // read which Path node that is: `target`. `travelled` counts every hop, for
-// the bound on transit hops (sheet review point 2, proposed on #5).
+// the bound on transit hops (sheet review point 2, accepted on #5).
 #ifndef HOPNET_CORE_ANT_H
 #define HOPNET_CORE_ANT_H
 
