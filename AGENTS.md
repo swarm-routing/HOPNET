@@ -7,7 +7,7 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: empty, not scheduled** (swarm-routing/.github#52; org ROADMAP "Protocol repositories"). The layout below is the plan; update this file in the PR that creates each part.
+**Status: not scheduled; `docs/fidelity.md` written (#4), no code** (swarm-routing/.github#52; org ROADMAP "Protocol repositories"). The layout below is the plan; update this file in the PR that creates each part.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
