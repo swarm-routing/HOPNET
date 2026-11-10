@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 name: Licence
 
-# core/ is MIT OR GPL-2.0-only and includes only the C++ standard library and
-# other core/ files; everything else is GPL-2.0-only (LICENSING.md).
+# core/ is MIT OR GPL-2.0-only and includes only the C++ standard library,
+# other core/ files and swarm-core's dual-licensed core/ at the commit
+# core/CMakeLists.txt pins (SWARM_CORE_REF; bump both together); everything
+# else is GPL-2.0-only (LICENSING.md).
 on:
   push:
     branches: [main]
@@ -18,3 +20,4 @@ jobs:
     with:
       dual-roots: core/
       core-roots: core/
+      core-deps: swarm-routing/ns3-swarm-core@206954e225f1098eb78fb8c2a72ffdd77627d7a8:core

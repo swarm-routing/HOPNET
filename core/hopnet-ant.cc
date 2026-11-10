@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-only
 #include "hopnet-ant.h"
 
-#include "swarm-core/swarm-wire.h"
+#include "swarm-wire.h"
 
 namespace hopnet::core {
 

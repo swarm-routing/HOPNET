@@ -12,8 +12,8 @@
 #ifndef HOPNET_CORE_INTRAZONE_TABLE_H
 #define HOPNET_CORE_INTRAZONE_TABLE_H
 
-#include "swarm-core/swarm-pheromone-table.h"
-#include "swarm-core/swarm-types.h"
+#include "swarm-pheromone-table.h"
+#include "swarm-types.h"
 
 #include <cstddef>
 #include <cstdint>

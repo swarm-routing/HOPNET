@@ -18,9 +18,9 @@
 #include "hopnet-ant.h"
 #include "hopnet-config.h"
 #include "hopnet-intrazone-table.h"
-#include "swarm-core/swarm-dedup-history.h"
-#include "swarm-core/swarm-ports.h"
-#include "swarm-core/swarm-route-decision.h"
+#include "swarm-dedup-history.h"
+#include "swarm-ports.h"
+#include "swarm-route-decision.h"
 
 #include <cstdint>
 #include <map>

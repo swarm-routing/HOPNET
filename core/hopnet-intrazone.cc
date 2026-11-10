@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-only
 #include "hopnet-intrazone.h"
 
-#include "swarm-core/swarm-selection.h"
+#include "swarm-selection.h"
 
 #include <algorithm>
 #include <cmath>

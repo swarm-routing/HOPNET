@@ -14,9 +14,12 @@ BUILD_ARGS ?=
 # The org tooling (check-headers.py, org-sync): a shallow clone, refreshed to ORG_REF.
 ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
+# swarm-core's core/ at the commit core/CMakeLists.txt pins (SWARM_CORE_REF), for the include check.
+SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
+SWARM_CORE_REF ?= 206954e225f1098eb78fb8c2a72ffdd77627d7a8
 
 .DEFAULT_GOAL := help
-.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test
+.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core
 
 help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -47,8 +50,12 @@ org-tools:  # the same templates CI checks against: refreshed to ORG_REF every t
 	@[ -d "$(ORG_DIR)/.git" ] || { git init -q "$(ORG_DIR)" && git -C "$(ORG_DIR)" remote add origin https://github.com/swarm-routing/.github; }
 	@git -C "$(ORG_DIR)" fetch -q --depth 1 origin $(ORG_REF) && git -C "$(ORG_DIR)" checkout -q --detach FETCH_HEAD
 
-headers: org-tools ## licence headers (org rule 1)
-	python3 -I "$(ORG_DIR)/tools/checks/check-headers.py" --dual core/ --core core/ .
+swarm-core:  # swarm-core at SWARM_CORE_REF, for the include check
+	@[ -d "$(SWARM_CORE_SRC)/.git" ] || git init -q "$(SWARM_CORE_SRC)"
+	@git -C "$(SWARM_CORE_SRC)" fetch -q --depth 1 https://github.com/swarm-routing/ns3-swarm-core $(SWARM_CORE_REF) && git -C "$(SWARM_CORE_SRC)" checkout -q --detach FETCH_HEAD
+
+headers: org-tools swarm-core ## licence headers (org rule 1)
+	python3 -I "$(ORG_DIR)/tools/checks/check-headers.py" --dual core/ --core core/ --core-dep "$(SWARM_CORE_SRC)/core" .
 
 org-sync-check: org-tools ## org-managed files match the org templates
 	python3 -I "$(ORG_DIR)/tools/org-sync/org_sync.py" check .

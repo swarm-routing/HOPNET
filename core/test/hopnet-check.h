@@ -7,7 +7,7 @@
 #ifndef HOPNET_CORE_TEST_CHECK_H
 #define HOPNET_CORE_TEST_CHECK_H
 
-#include "../swarm-core/swarm-ports.h"
+#include "swarm-ports.h"
 
 #include <cmath>
 #include <cstdint>

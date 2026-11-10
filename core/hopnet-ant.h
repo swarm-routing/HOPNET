@@ -16,8 +16,8 @@
 #define HOPNET_CORE_ANT_H
 
 #include "hopnet-config.h"
-#include "swarm-core/swarm-types.h"
-#include "swarm-core/swarm-visited-path.h"
+#include "swarm-types.h"
+#include "swarm-visited-path.h"
 
 #include <cstddef>
 #include <cstdint>

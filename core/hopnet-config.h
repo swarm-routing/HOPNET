@@ -8,7 +8,7 @@
 #ifndef HOPNET_CORE_CONFIG_H
 #define HOPNET_CORE_CONFIG_H
 
-#include "swarm-core/swarm-types.h"
+#include "swarm-types.h"
 
 #include <cstddef>
 
