@@ -60,7 +60,7 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | Evaporation: every other neighbour's entry in the same column is multiplied by (1 − E), eq. 4.2; it runs on each ant update, not on a timer | [W07] eq. 4.2, p. 26 | Applied inside the update, no periodic decay | as written |
 | Each ant accumulates the path time T(v_S, v_i) + w(v_i, v_j) as it moves | [W07] p. 26 | Time field of the ant header | as written |
 | Backward-ant update for the destination column: eq. 4.3, φ += ε / T′; other neighbours in column D decay by eq. 4.2 | [W07] eq. 4.3, p. 26 | At node v_k, having come from v_b, cell (v_b, D) gains ε / T′ with **T′ = T(S, D) − T(S, v_k)**, the time from v_k to D through v_b. Each Path entry carries the cumulative Time at which the forward ant left that node | repo choice (maintainer decision 2026-11-10, [#5](https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6757235563)): of the readings of the printed T′ = T(v_k, v_D) − T(v_k, v_b), the time still to go from v_b is 0 on the first backward hop (infinite deposit), and the time already covered contradicts "more pheromone closer to the destination"; this one mirrors eq. 4.1 and is [DDG04] §3.1's backward-ant estimate |
-| Next-hop selection rule (for ants and for data) | [W07] p. 25, p. 26 | Standard ACO random-proportional (roulette) selection over the IntraRT column of the destination: neighbour n is chosen with probability φ(n, D)^β / Σ_m φ(m, D)^β over the neighbours m with φ(m, D) > 0, β = 20 for ants and data (Parameters). The column is the packet's current target inside the zone: the destination for intra-zone data; for an external forward ant, the peripheral node it is being sent to while bordercasting, then the destination once a peripheral node finds it in its zone. Inter-zone data is source-routed along its InterRT path and selects nothing. Internal forward ants carry no destination and select nothing: they flood the zone (row above). Through `swarm-core`'s `swarm-selection` (`selectNextHop`, weights (φ / φ_best)^β, the same distribution without overflow; swarm-routing/ns3-swarm-core#27), or the same rule written in `core/` if that is not merged first | deviation: repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). p. 25 announces "the pheromone (φ) update and node selection procedure", but only the updates (eqs. 4.1–4.3) follow; no selection rule appears in [W07]. The rule here is the standard ACO one, not HOPNET's; revisit it if [W09] gives the rule |
+| Next-hop selection rule (for ants and for data) | [W07] p. 25, p. 26 | Standard ACO random-proportional (roulette) selection over the IntraRT column of the destination: neighbour n is chosen with probability φ(n, D)^β / Σ_m φ(m, D)^β over the neighbours m with φ(m, D) > 0, β = 20 for ants and data (Parameters). The column is the packet's current target inside the zone: the destination for intra-zone data; for an external forward ant, the peripheral node it is being sent to while bordercasting, then the destination once a peripheral node finds it in its zone. Inter-zone data is source-routed over the Path nodes of its InterRT record (loose source route, row *Path lists the bordercasters* below): the record fixes the next Path node, and each transit node selects a next hop toward that node by this rule, over the IntraRT column of the next Path node. Internal forward ants carry no destination and select nothing: they flood the zone (row above). Through `swarm-core`'s `swarm-selection` (`selectNextHop`, weights (φ / φ_best)^β, the same distribution without overflow; swarm-routing/ns3-swarm-core#27), or the same rule written in `core/` if that is not merged first | deviation: repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). p. 25 announces "the pheromone (φ) update and node selection procedure", but only the updates (eqs. 4.1–4.3) follow; no selection rule appears in [W07]. The rule here is the standard ACO one, not HOPNET's; revisit it if [W09] gives the rule |
 | Data to a destination inside the zone: found in the IntraRT, and a route always exists because the table is proactive | [W07] p. 25 | IntraRT lookup | as written; how data picks among the neighbours is the row above |
 | A data packet is dropped at a node whose pheromone toward the destination is zero on every link | [W07] p. 34 | Drop and count it | as written |
 | InterRT: Destination, SeqNo, Path, Expire; a source route kept until it expires | [W07] p. 27 | Source-route cache with an expiry time | as written (expiry open, below) |
@@ -185,7 +185,7 @@ reproduced as the thesis measured it:
   deviation, standard ACO roulette selection, to revisit if [W09] gives
   HOPNET's own. The open readings, the edge-time measure and the InterRT
   expiry were pre-registered and accepted (maintainer decision 2026-11-10,
-  [#5](https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6757235563)); nothing in the sheet blocks `core/`.
+  [#5](https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6757235563)); the two review points under *Unknowns* remain.
 
 So the arm does **not** ship as an infeasibility verdict on the AntHocNet
 side: the anchor below is testable. If [W09] is read and still leaves the
@@ -225,7 +225,19 @@ compares, external backward ants (no pheromone, one InterRT path), neighbour
 discovery and loss and link-break detection, how internal forward ants move
 (a zone-limited flood), the edge-time measure w and the InterRT expiry.
 
-Nothing open blocks `core/`. Facts about the thesis that stay unknown:
+Raised in review of [#23](https://github.com/swarm-routing/HOPNET/pull/23)
+and not covered by that decision, so open for the maintainer before `core/`:
+
+1. Whether a node re-broadcasts a later copy of an internal forward ant that
+   arrives with more remaining Hops than the copy it already forwarded. With
+   "first copy only", a copy that arrived over a longer path can leave nodes
+   within the radius unreached.
+2. A bound on transit hops between consecutive Path nodes, for external ants
+   and inter-zone data. Duplicates are dropped at bordercasters only, the Path
+   cap counts bordercasters only, and roulette selection can send a packet back
+   and forth between two transit relays.
+
+Facts about the thesis that stay unknown:
 the evaporation rate its figures used, the zone radius of its AODV comparisons, its AntHocNet implementation and parameters, its traffic and radio settings for that comparison, and its runs per point.
 
 [W09] is the first place to look for every row above and for HOPNET's own
