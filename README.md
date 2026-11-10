@@ -7,6 +7,11 @@
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue?logo=cplusplus)](AGENTS.md)
 [![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org)
 [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_HOPNET&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=swarm-routing_HOPNET)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_HOPNET&metric=bugs)](https://sonarcloud.io/summary/new_code?id=swarm-routing_HOPNET)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_HOPNET&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=swarm-routing_HOPNET)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_HOPNET&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=swarm-routing_HOPNET)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/HOPNET?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2FHOPNET&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 <!-- org-sync:end badges -->
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
