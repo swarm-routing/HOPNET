@@ -7,21 +7,26 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: not scheduled; `docs/fidelity.md` written (#4), no code** (swarm-routing/.github#52; org ROADMAP "Protocol repositories"). The layout below is the plan; update this file in the PR that creates each part.
+**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half is written; the inter-zone half, the ns-3 module and the gates are not.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
 ```
-core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR GPL-2.0-only, core/LICENSE)
-ns3/        contrib module `hopnet` (GPL-2.0-only): header codec, adapter, helper, examples, test suite
+core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR GPL-2.0-only, core/LICENSE):
+            hopnet-config.h (parameters, each citing its fidelity row), hopnet-ant (the ant header + wire codec),
+            hopnet-intrazone-table (IntraRT), hopnet-intrazone (internal ants, eqs. 4.1-4.3, neighbours, selection);
+            test/ (ctest); swarm-core/ (swarm-core's primitives vendored at swarm-core/PIN, never edited here)
+ns3/        (planned) contrib module `hopnet` (GPL-2.0-only): adapter, helper, examples, test suite
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
 ```
 
 ## Build & verify
 
-CI will be [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) once `ns3/` exists (as in ARA and BeeAdHoc), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@main`. Locally:
+CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, again under ASan + UBSan, and the vendored swarm-core files diffed against `core/swarm-core/PIN`; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks. [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) joins once `ns3/` exists (as in ARA and BeeAdHoc), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@main`. Locally:
 
 ```bash
+make core-test   # core/ alone: cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
+cmake -S core -B build/asan -DHOPNET_CORE_SANITIZE=ON && cmake --build build/asan && ctest --test-dir build/asan
 make help    # the org's standard target names: build, test, lint, format, check, clean, shell, ci
 make check   # everything CI gates on
 docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swarm-core:ro" \
@@ -174,7 +179,8 @@ here is undone by the next `org_sync.py apply`).
 | The org's invariants, labels, issue shape | [`swarm-routing/.github` CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md) |
 | The plan | swarm-routing/.github#52, org ROADMAP "Protocol repositories" |
 | The source | Wang, *HOPNET* (2007 thesis), [UManitoba MSpace](https://mspace.lib.umanitoba.ca/bitstream/1993/20935/1/Wang_HOPNET_a.pdf); AntHocNet `docs/research-landscape-2026.md` (Other swarm protocols) |
-| Shared primitives | `swarm-routing/ns3-swarm-core` |
+| Shared primitives | `swarm-routing/ns3-swarm-core`; vendored into `core/swarm-core/` at `PIN` (its README: how to move the pin) |
+| The core's readings and parameters | `docs/fidelity.md`, the accepted pre-registration on #5, `core/hopnet-config.h` |
 | Benchmark against AntHocNet, ARA, AODV, OLSR | `swarm-routing/ns3-tools` arenas, results into `swarm-routing/benchmarks` |
 | Record an architecture decision | [`docs/adr/`](docs/adr/) (`0000-template.md`) |
 | Pick up open work | this repo's issues — highest open `priority:P*` first; newest open `handoff` issue for work in flight |

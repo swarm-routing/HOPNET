@@ -16,7 +16,7 @@ ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
 
 .DEFAULT_GOAL := help
-.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools
+.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test
 
 help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -24,14 +24,17 @@ help: ## list the targets
 build: ## build what this repo ships
 	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib hopnet=/src/ns3; else echo "make build: no ns3/ module yet"; fi
 
-test: ## the fast tests CI runs on every PR
+test: core-test ## the fast tests CI runs on every PR
 	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib --test hopnet=/src/ns3; else echo "make test: no ns3/ module yet"; fi
 
-lint: ## static checks, no changes
-	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format --dry-run --Werror
+# The org .clang-format unless this repo ships its own, as CI's format check.
+CLANG_STYLE = $(if $(wildcard .clang-format),file,file:$(ORG_DIR)/.clang-format)
 
-format: ## apply the formatters
-	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format -i
+lint: org-tools ## static checks, no changes
+	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format-18 --style=$(CLANG_STYLE) --dry-run --Werror
+
+format: org-tools ## apply the formatters
+	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format-18 --style=$(CLANG_STYLE) -i
 
 clean: ## remove build outputs
 	rm -rf build
@@ -53,3 +56,6 @@ org-sync-check: org-tools ## org-managed files match the org templates
 check: lint test headers org-sync-check ## everything CI gates on
 
 ci: check ## exactly what CI runs
+
+core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
+	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure

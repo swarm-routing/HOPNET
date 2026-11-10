@@ -5,10 +5,11 @@ differ. Every row cites its source (`[KEY] §x`, `Fig. N`, `eq. N`, `p. N`), or
 says `repo choice: <reason>`, or `unknown`. Checked by `swarm-routing/.github`
 `tools/fidelity/fidelity.py check`.
 
-`core/` is not written yet (HOPNET golden rule 11: fidelity sheet before code).
-Until it is, the **Implementation** column records what the fresh
-implementation is to do, and **Status** says how that plan stands against the
-thesis. Section, equation and figure numbers are the thesis's; **page numbers
+`core/` is being written in slices (#5), starting with the intra-zone half
+(`core/hopnet-intrazone.{h,cc}`: the internal ants, eqs. 4.1–4.3, neighbour
+discovery and loss, selection inside the zone). The **Implementation** column
+records what the fresh implementation does or is to do, and **Status** says
+how it stands against the thesis. Section, equation and figure numbers are the thesis's; **page numbers
 for [W07] are the thesis's printed page numbers** (the PDF page is the printed
 page + 8). The thesis PDF is a scan with an OCR layer; every value below was
 read from the page image, not only from the OCR text.
@@ -104,6 +105,7 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | Route-discovery retry policy at the source | at most one discovery per destination per 1 s, while data for it waits | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::reactiveRetryInterval` (1 s) | [W07] p. 29 says only "re-initiate" after an error ant |
 | Duplicate-suppression history size | 4096 (source, seq) entries | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::maxHistory` | Bounded (org rule 7); [W07] gives no size |
 | Path cap of an ant (external forward ants carry no hop limit) | 100 nodes | repo choice (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)): AntHocNet's `Config::maxPathLength`; a safety bound only (org rule 7), above any path in the scenarios here | [W07] p. 25 leaves the external ant's Hops blank |
+| IntraRT capacity (cells, neighbour × zone node) | 4096 | repo choice: a bound only (org rule 7), the size of the duplicate history; the anchor's densest point (about 19 neighbours in range, 2-hop zones of about 60 nodes) needs about 1100 cells. A new cell in a full table is refused | [W07] gives no size |
 | Simulator | GloMoSim (on PARSEC) | [W07] §5.1 | Version not stated; HOPNET implemented at the network layer |
 | AODV base scenario: nodes, area | 50, 3000 m × 1000 m | [W07] §5.2 | Varied 10–190 nodes in Fig. 5.1–5.3 (area for those not restated) |
 | AODV base scenario: mobility | random waypoint, speed U[0, 10] m/s | [W07] §5.2 | Pause time not stated for the base scenario |
