@@ -26,11 +26,13 @@ public:
         failures_.push_back(std::string(where.file_name()) + ":" + std::to_string(where.line()) +
                             ": " + std::string(what));
     }
-    /// |a - b| within 1e-9 relative: the deposits are sums and quotients of
-    /// the same doubles taken in a different order.
+    /// |a - b| within 1e-9 relative (plus 1e-12 absolute, for values near 0):
+    /// the deposits are sums and quotients of the same doubles taken in a
+    /// different order.
     void near(double a, double b, std::string_view what,
               std::source_location where = std::source_location::current()) {
-        check(std::fabs(a - b) <= 1e-9 * std::fmax(std::fabs(a), std::fabs(b)), what, where);
+        check(std::fabs(a - b) <= 1e-12 + 1e-9 * std::fmax(std::fabs(a), std::fabs(b)), what,
+              where);
     }
     const std::vector<std::string>& failures() const { return failures_; }
 

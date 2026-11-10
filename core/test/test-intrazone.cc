@@ -344,6 +344,8 @@ void TestMalformedAnts(Checker& c) {
             "a zero Time would deposit 1/0");
     c.check(z.onReceive(forwardAnt(5, 5, 1, 0.01, 0), 5).action == RouteAction::Drop,
             "no hop budget left");
+    c.check(z.onReceive(forwardAnt(5, 5, 1, 0.01, 3), 5).action == RouteAction::Drop,
+            "a hop budget above the zone radius (2) would flood past the zone");
     c.check(z.onReceive(forwardAnt(0, 5, 1, 0.01, 1), 5).action == RouteAction::Drop,
             "this node's own ant coming back");
     Ant ext = forwardAnt(5, 5, 1, 0.01, 1);

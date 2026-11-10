@@ -52,10 +52,12 @@ Decision IntraZone::onReceive(const Ant& ant, NodeAddress from) {
 
 Decision IntraZone::onInternalForward(const Ant& ant, NodeAddress from) {
     // A copy that already passed here (the source included) is a loop, and a
-    // malformed ant would deposit nonsense: both are dropped untouched.
+    // malformed ant would deposit nonsense: both are dropped untouched. A hop
+    // budget above the zone radius ([W07] p. 25) would let one ant flood past
+    // the zone, so it is malformed too.
     if (ant.source == kInvalidAddress || ant.path.empty() || ant.path.back().node != from ||
         ant.path.hops().front().node != ant.source || ant.path.contains(self_) || ant.hops < 1 ||
-        !positiveFinite(ant.time)) {
+        ant.hops > config_.zoneRadius || !positiveFinite(ant.time)) {
         return Decision::drop();
     }
     // Eq. 4.1 at v_j = self from v_i = from: cell (from, S) gains

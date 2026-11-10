@@ -26,7 +26,7 @@ CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warni
 
 ```bash
 make core-test   # core/ alone: cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
-cmake -S core -B build/asan -DHOPNET_CORE_SANITIZE=ON && cmake --build build/asan && ctest --test-dir build/asan
+cmake -S core -B build/sanitized -DHOPNET_CORE_SANITIZE=ON && cmake --build build/sanitized && ctest --test-dir build/sanitized   # as CI
 make help    # the org's standard target names: build, test, lint, format, check, clean, shell, ci
 make check   # everything CI gates on
 docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swarm-core:ro" \
