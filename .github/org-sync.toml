@@ -14,4 +14,4 @@ description = "HOPNET (Wang, 2007) as a standalone swarm routing protocol for MA
 homepage = "https://swarm-routing.github.io/arena/HOPNET/"
 topics = ["hopnet", "ant-colony-optimization", "aco", "zone-routing", "swarm-intelligence", "manet", "ad-hoc-routing", "routing-protocol", "ns-3"]
 ruleset = "protocol"
-required_checks = ["check / org-sync", "headers / licence", "title / title"]
+required_checks = ["check / org-sync", "headers / licence", "title / title", "core-test", "core-format"]
