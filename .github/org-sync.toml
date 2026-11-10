@@ -2,3 +2,8 @@
 kind = "protocol"
 title = "HOPNET"
 dual = ["core/"]
+
+# No SonarQube Cloud project yet (swarm-routing/.github#104): no Sonar badges or
+# sonar-project.properties until the repository is imported there and has code.
+[quality]
+sonar = false
