@@ -9,7 +9,7 @@ dual = ["core/"]
 sonar = false
 
 [settings]
-# GitHub settings as code: swarm-routing/.github tools/repo-settings (#117).
+# GitHub settings as code: swarm-routing/.github tools/repo-settings (swarm-routing/.github#117).
 description = "HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, proactive inside a zone and reactive between zones. A simulator-agnostic C++ core and an ns-3 contrib module on swarm-core."
 homepage = "https://swarm-routing.github.io/arena/HOPNET/"
 topics = ["hopnet", "ant-colony-optimization", "aco", "zone-routing", "swarm-intelligence", "manet", "ad-hoc-routing", "routing-protocol", "ns-3"]
