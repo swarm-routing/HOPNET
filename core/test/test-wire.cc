@@ -17,7 +17,9 @@ Ant sampleAnt() {
           .seq = 0xA1B2C3D4u,
           .hops = 2,
           .time = 0.0125,
-          .path = VisitedPath(Config{}.maxPathLength)};
+          .path = VisitedPath(Config{}.maxPathLength),
+          .target = 0x01020304,
+          .travelled = 0xBEEF};
     a.path.push(1, 0.001);
     a.path.push(2, 0.004);
     a.path.push(7, 0.0125);
@@ -35,11 +37,13 @@ std::vector<std::uint8_t> bytesOf(const Ant& a) {
 void TestWireRoundtrip(Checker& c) {
     const Ant a = sampleAnt();
     const auto bytes = bytesOf(a);
-    c.check(bytes.size() == 1 + 1 + 4 + 4 + 4 + 2 + 8 + 2 + 3 * 12, "frame length");
+    c.check(bytes.size() == 1 + 1 + 4 + 4 + 4 + 2 + 8 + 4 + 2 + 2 + 3 * 12, "frame length");
     c.check(bytes[0] == kWireVersion, "version byte leads");
     c.check(bytes[1] == 2, "type byte: backward is 2 ([W07] p. 25)");
     c.check(bytes[2] == 7 && bytes[3] == 0, "source little-endian");
     c.check(bytes[10] == 0xD4 && bytes[13] == 0xA1, "seq little-endian");
+    c.check(bytes[24] == 0x04 && bytes[27] == 0x01 && bytes[28] == 0xEF && bytes[29] == 0xBE,
+            "target and travelled little-endian (version 2)");
     const auto back = decode(bytes, Config{}.maxPathLength);
     c.check(back.has_value() && *back == a, "decode(encode(a)) == a");
     for (std::uint8_t t = 0; t <= 4; ++t) {

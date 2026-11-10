@@ -18,6 +18,8 @@ void encode(const Ant& ant, std::vector<std::uint8_t>& out) {
     w.u32(ant.seq);
     w.u16(ant.hops);
     w.f64(ant.time);
+    w.i32(ant.target);
+    w.u16(ant.travelled);
     ant.path.write(w);
 }
 
@@ -33,6 +35,8 @@ std::optional<Ant> decode(std::span<const std::uint8_t> bytes, std::size_t maxPa
     ant.seq = r.u32();
     ant.hops = r.u16();
     ant.time = r.f64();
+    ant.target = r.i32();
+    ant.travelled = r.u16();
     VisitedPath::read(r, ant.path);
     if (!r.atEnd()) return std::nullopt;
     return ant;
