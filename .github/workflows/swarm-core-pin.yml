@@ -1,0 +1,22 @@
+# Copyright (c) 2026 Daniel Joppi (https://github.com/swarm-routing)
+# SPDX-License-Identifier: GPL-2.0-only
+name: swarm-core pin
+
+# HOPNET's core/ builds on swarm-core's core/ at the commit core/CMakeLists.txt
+# pins (SWARM_CORE_REF). This check (swarm-routing/.github
+# reusable-swarm-core-pin.yml, swarm-routing/.github#174) fails unless the
+# Makefile and every workflow's swarm-core core-deps name that same commit,
+# and when swarm-core main's core/ differs from the pinned core/: then bump
+# the pin in all of them in one PR. The check is named `swarm-core / pin`.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  swarm-core:
+    uses: swarm-routing/.github/.github/workflows/reusable-swarm-core-pin.yml@main
