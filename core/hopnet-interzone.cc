@@ -113,7 +113,12 @@ std::vector<Decision> InterZone::discover(NodeAddress dest) {
             .hops = 0,  // blank: no hop limit, [W07] p. 25
             .time = 0.0,
             .path = VisitedPath(config_.maxPathLength)};
-    return bordercast(ant, kInvalidAddress);
+    // With no peripheral node to send to, bordercast() says Drop: the fate of
+    // a received ant. Nothing was received here, so the caller gets no
+    // decision, and a data packet waiting for the route is not mistaken for it.
+    std::vector<Decision> out = bordercast(ant, kInvalidAddress);
+    std::erase_if(out, [](const Decision& d) { return d.action == RouteAction::Drop; });
+    return out;
 }
 
 std::vector<Decision> InterZone::bordercast(const Ant& ant, NodeAddress from) {

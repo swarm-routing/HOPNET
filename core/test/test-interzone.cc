@@ -482,7 +482,10 @@ void TestDiscoveryRetry(Checker& c) {
     SeededRng rng(1);
     IntraZone intra(cfg, S, clock, link, rng);
     InterZone z(cfg, intra, clock);
-    z.discover(50);
+    DataHeader lonely{.source = S, .destination = 50};
+    const Outcome alone = z.routeData(lonely, kInvalidAddress);
+    c.check(alone.decisions.size() == 1 && alone.decisions[0].action == RouteAction::Queue,
+            "no peripheral node: the packet waits, and no Drop reads as its fate");
     const std::uint32_t s1 = intra.lastSeq();
     z.discover(51);
     c.check(intra.lastSeq() == s1, "the discovery times are bounded: a full map starts none");

@@ -69,7 +69,8 @@ public:
 
     /// Starts a route discovery for `dest` unless one started less than
     /// Config::discoveryRetryInterval ago: one external forward ant per
-    /// peripheral node, [W07] p. 27.
+    /// peripheral node, [W07] p. 27. Empty when none starts or there is no
+    /// peripheral node to send to (never a Drop: nothing was received).
     std::vector<Decision> discover(NodeAddress dest);
 
     const InterZoneTable& table() const { return table_; }
