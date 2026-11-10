@@ -14,6 +14,8 @@ HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colon
 
 **Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) and the inter-zone half's route discovery and data forwarding (bordercasting, InterRT) are written and tested; the local repair and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
 
+**Release status:** v0.1.0, the first release, is cut before the comparator gates (maintainer decision 2026-11-10) and has **not** cleared them (org golden rule 6: fidelity sheet, per-PR delivery smoke, anchor). It ships `core/` and `docs/`; the ns-3 module `hopnet` and the anchor are pending, so no number from v0.1.0 counts as a benchmark result. The gated release is proposed as v0.2.0. Releases are cut by [`release.yml`](.github/workflows/release.yml) and listed under [Releases](https://github.com/swarm-routing/HOPNET/releases).
+
 ## Epics
 
 <!-- epics:begin -->

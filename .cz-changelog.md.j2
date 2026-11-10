@@ -1,0 +1,29 @@
+{#- Commitizen's default CHANGELOG.md template plus a "Release status" section
+    for the versions that need one. reusable-release.yml publishes a version's
+    CHANGELOG.md section as its release notes, so the status reaches them.
+    A later release cut before the gates needs its own entry here. -#}
+{% for entry in tree %}
+
+## {{ entry.version }}{% if entry.date %} ({{ entry.date }}){% endif %}
+
+{% if entry.version == "v0.1.0" %}
+### Release status
+
+v0.1.0 is cut before the comparator gates (maintainer decision 2026-11-10). It has **not** cleared the three gates of org golden rule 6 (a fidelity sheet from its source, the per-PR delivery smoke, and an anchor reproducing the source's own trend). The anchor is pending, and so is the ns-3 contrib module `hopnet`: it is not part of this release. No result from this release counts as a benchmark number, and it does not enter the benchmarks suite until a release clears the gates; that gated release is proposed as v0.2.0 (swarm-routing/.github ROADMAP "Releases"). It ships `core/` (MIT OR GPL-2.0-only, with `core/LICENSE`) and `docs/`, as they stand on `main` at the release commit.
+
+{% endif %}
+{% for change_key, changes in entry.changes.items() %}
+
+{% if change_key %}
+### {{ change_key }}
+{% endif %}
+
+{% for change in changes %}
+{% if change.scope %}
+- **{{ change.scope }}**: {{ change.message }}
+{% elif change.message %}
+- {{ change.message }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
