@@ -10,8 +10,10 @@ HOPNET is in wave D. Issue state is always truer than a checked-in diagram.
 
 ## How this plan is tracked
 
-Each issue a release gates carries one **`release:` label**, so every row below
-is a live query:
+Each issue a release gates will carry one **`release:` label**, so every row
+below is a live query. Until the labels are synced and applied (the release
+labels are being added to `labels.json` on 2026-11-11), a board may omit
+gating issues:
 
 | Release | Board |
 |---|---|
@@ -94,7 +96,7 @@ ns3-tools.
 | Release | Exit criteria |
 |---|---|
 | **v0.1.0** (shipped 2026-11-11) | `core/` (intra-zone and inter-zone halves) and `docs/fidelity.md`, released ungated by the maintainer's decision of 2026-11-10. |
-| **v0.2.0** "gated" | The ns-3 module `hopnet` is green on `ns3-dev:latest-{debug,sanitized}`; the swarm-core router observer is adopted ([#40](https://github.com/swarm-routing/HOPNET/issues/40)); the repository has its own benchmark pipeline, paired smoke and anchor campaigns on the org reusable cell workflow ([#28](https://github.com/swarm-routing/HOPNET/issues/28)); the anchor against AntHocNet gives a verdict, PASS or a written infeasibility verdict (org golden rule 6; this repo's rule 12); the fidelity open items are settled. Scope: the rest of [#5](https://github.com/swarm-routing/HOPNET/issues/5) (§4.3 local repair, ns-3 module), #40, #28. |
+| **v0.2.0** "gated" | The ns-3 module `hopnet` is green on `ns3-dev:latest-{debug,sanitized}`; the swarm-core router observer is adopted ([#40](https://github.com/swarm-routing/HOPNET/issues/40)); the repository has its own benchmark pipeline, paired smoke and anchor campaigns on the org reusable cell workflow ([#28](https://github.com/swarm-routing/HOPNET/issues/28)); the anchor against AntHocNet gives a verdict, PASS or a written infeasibility verdict (org golden rule 6; this repo's rule 12); the fidelity unknowns that `core/` and the anchor depend on (zone radius, ant rates, the AntHocNet configuration the anchor pairs against) are each a repo choice or a recorded decision in `docs/fidelity.md`; unknowns only the 2009 paper can settle stay with the v0.3.0 review (#21). Scope: the rest of [#5](https://github.com/swarm-routing/HOPNET/issues/5) (§4.3 local repair, ns-3 module), #40, #28. |
 | **v0.3.0** "reviewed" | The fidelity sheet is checked against the 2009 journal paper and Islam et al. ([#21](https://github.com/swarm-routing/HOPNET/issues/21)); the perf follow-ups land ([#41](https://github.com/swarm-routing/HOPNET/issues/41), [#42](https://github.com/swarm-routing/HOPNET/issues/42)); any new mechanism is default-off with its own A/B. |
 | **v1.0.0** | Wire format and `core/` API frozen; a released run is recorded in the benchmarks global suite. |
 
