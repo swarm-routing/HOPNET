@@ -230,6 +230,7 @@ here is undone by the next `org_sync.py apply`).
 | You want to… | Go to |
 |--------------|-------|
 | The org's invariants, labels, issue shape | [`swarm-routing/.github` CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md) |
+| Know which release a piece of work serves, or why something is not planned | [`docs/roadmap.md`](docs/roadmap.md) (the release ladder; issues carry `release:` labels) |
 | The plan | swarm-routing/.github#52, org ROADMAP "Protocol repositories" |
 | The source | Wang, *HOPNET* (2007 thesis), [UManitoba MSpace](https://mspace.lib.umanitoba.ca/bitstream/1993/20935/1/Wang_HOPNET_a.pdf); AntHocNet `docs/research-landscape-2026.md` (Other swarm protocols) |
 | Shared primitives | `swarm-routing/ns3-swarm-core`; `core/` fetches its `core/` at `SWARM_CORE_REF` (`core/CMakeLists.txt`); bump it together with `core-deps` in `.github/workflows/licence.yml` and `SWARM_CORE_REF` in the `Makefile` |
