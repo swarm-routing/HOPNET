@@ -16,9 +16,8 @@ authors:
   - family-names: Joppi
     given-names: Daniel Henrique
     orcid: "https://orcid.org/0009-0009-6436-8174"
-version: 0.1.0
-# The work as a whole is GPL-2.0-only; the MIT option applies only to
-# the dual-licensed directories, listed per directory in LICENSING.md.
+version: "0.1.0"
+# The work as a whole; core/ also MIT OR GPL-2.0-only (LICENSING.md).
 license: GPL-2.0-only
 repository-code: "https://github.com/swarm-routing/HOPNET"
 url: "https://github.com/swarm-routing/HOPNET"
