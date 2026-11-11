@@ -10,6 +10,7 @@
 #ifndef HOPNET_CORE_INTERZONE_TABLE_H
 #define HOPNET_CORE_INTERZONE_TABLE_H
 
+#include "swarm-observer.h"
 #include "swarm-types.h"
 
 #include <cstddef>
@@ -45,8 +46,14 @@ struct InterRoute {
 class InterZoneTable {
 public:
     /// At most `capacity` records, each valid `lifetime` seconds after its
-    /// insertion or last use.
-    InterZoneTable(std::size_t capacity, Time lifetime);
+    /// insertion or last use. `observer` (optional, null: none) hears each
+    /// record added or removed as a route change: destination = the record's,
+    /// next hop = the node after this one on its Path. A record replaced by
+    /// one through another node is a removal and an addition; through the
+    /// same node, no event. An expired record counts until it is purged,
+    /// erased or replaced.
+    InterZoneTable(std::size_t capacity, Time lifetime,
+                   swarm::core::IRouterObserver* observer = nullptr);
 
     /// Inserts the record for `dest` (path.back()) unless an unexpired one
     /// holds a SeqNo >= `seq`. A full table first drops its expired records,
@@ -68,11 +75,23 @@ public:
 
     std::size_t size() const { return routes_.size(); }
     std::size_t capacity() const { return capacity_; }
+    /// What the records hold, in bytes: per record its fixed fields and one
+    /// address per Path node (payload, not allocator overhead).
+    std::size_t bytes() const {
+        return routes_.size() * (sizeof(NodeAddress) + sizeof(InterRoute)) +
+               pathNodes_ * sizeof(NodeAddress);
+    }
 
 private:
+    /// A record leaves routes_: its Path nodes go from bytes(), and the
+    /// observer hears the removal.
+    void forget(NodeAddress dest, const InterRoute& route);
+
     std::size_t capacity_;
     Time lifetime_;
     std::map<NodeAddress, InterRoute> routes_;
+    std::size_t pathNodes_ = 0;  // the Path nodes of every record, for bytes()
+    swarm::core::IRouterObserver* observer_;
 };
 
 }  // namespace hopnet::core

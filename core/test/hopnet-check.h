@@ -118,6 +118,13 @@ void TestNotificationInvalid(Checker& c);
 void TestSpliceLoop(Checker& c);
 void TestRepairAtTransitRelay(Checker& c);
 void TestRepairDeterminism(Checker& c);
+void TestKindNames(Checker& c);
+void TestObserverIntraZone(Checker& c);
+void TestObserverControl(Checker& c);
+void TestObserverRoutesAndState(Checker& c);
+void TestObserverData(Checker& c);
+void TestObserverRepair(Checker& c);
+void TestObserverSilent(Checker& c);
 
 inline const std::vector<NamedTest>& AllTests() {
     static const std::vector<NamedTest> tests = {
@@ -156,6 +163,13 @@ inline const std::vector<NamedTest>& AllTests() {
         {"splice-loop", TestSpliceLoop},
         {"repair-at-transit-relay", TestRepairAtTransitRelay},
         {"repair-determinism", TestRepairDeterminism},
+        {"kind-names", TestKindNames},
+        {"observer-intrazone", TestObserverIntraZone},
+        {"observer-control", TestObserverControl},
+        {"observer-routes-and-state", TestObserverRoutesAndState},
+        {"observer-data", TestObserverData},
+        {"observer-repair", TestObserverRepair},
+        {"observer-silent", TestObserverSilent},
     };
     return tests;
 }

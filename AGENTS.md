@@ -16,9 +16,11 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             hopnet-config.h (parameters, each citing its fidelity row), hopnet-ant (the ant header + wire codec),
             hopnet-intrazone-table (IntraRT), hopnet-intrazone (internal ants, eqs. 4.1-4.3, neighbours, selection),
             hopnet-interzone-table (InterRT), hopnet-interzone (bordercasting, external ants, data routing),
-            hopnet-data (the data header + wire codec);
+            hopnet-data (the data header + wire codec), hopnet-observe.h (what the core reports to swarm-core's
+            `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
             test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: SWARM_CORE_REF in core/CMakeLists.txt)
 ns3/        (planned) contrib module `hopnet` (GPL-2.0-only): adapter, helper, examples, test suite
+            (pass `&Observer()` to IntraZone and InterZone, register `kindNames()` once: #40)
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
 ```
 

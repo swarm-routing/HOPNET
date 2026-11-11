@@ -4,10 +4,23 @@
 
 #include "swarm-wire.h"
 
+#include <array>
+
 namespace hopnet::core {
 
 using swarm::core::WireReader;
 using swarm::core::WireWriter;
+
+std::span<const swarm::core::KindName> kindNames() {
+    static constexpr std::array<swarm::core::KindName, 5> names{{
+        {static_cast<std::uint8_t>(AntType::InternalForward), "InternalForward"},
+        {static_cast<std::uint8_t>(AntType::ExternalForward), "ExternalForward"},
+        {static_cast<std::uint8_t>(AntType::Backward), "Backward"},
+        {static_cast<std::uint8_t>(AntType::Notification), "Notification"},
+        {static_cast<std::uint8_t>(AntType::Error), "Error"},
+    }};
+    return names;
+}
 
 void encode(const Ant& ant, std::vector<std::uint8_t>& out) {
     WireWriter w(out);
