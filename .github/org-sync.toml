@@ -23,3 +23,31 @@ required_checks = ["check / org-sync", "headers / licence", "title / title", "co
 # Merge through a merge queue (swarm-routing/.github#130); every workflow behind a required
 # check also runs on merge_group.
 merge_queue = true
+
+# The work this repository implements or builds on: the README's Releases &
+# citing list and CITATION.cff's references (swarm-routing/.github org-sync,
+# #228). Every DOI confirmed with lit_search.py confirm; fields from Crossref.
+
+[[references]]
+type = "thesis"
+title = "HOPNET: A Hybrid ant colony OPtimization routing algorithm for Mobile ad hoc NETwork"
+authors = ["Wang, Jianping"]
+year = 2007
+venue = "University of Manitoba"
+thesis_type = "MSc thesis"
+url = "https://hdl.handle.net/1993/20935"
+no_doi = "a thesis in the University of Manitoba's MSpace repository."
+role = "The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices."
+
+[[references]]
+type = "article"
+title = "HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network"
+authors = ["Wang, Jianping", "Osagie, Eseosa", "Thulasiraman, Parimala", "Thulasiram, Ruppa K."]
+year = 2009
+venue = "Ad Hoc Networks"
+volume = "7"
+issue = "4"
+pages = "690-705"
+publisher = "Elsevier BV"
+doi = "10.1016/j.adhoc.2008.06.001"
+role = "The journal version of the thesis."
