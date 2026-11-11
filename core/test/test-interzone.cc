@@ -7,246 +7,9 @@
 // ant and the InterRT (d), the InterRT expiry and the discovery retry policy,
 // a failed data transmission (e); plus the data header codec, the bounds and
 // determinism.
-#include "../hopnet-interzone.h"
-#include "hopnet-check.h"
-
-#include <deque>
-#include <map>
-#include <memory>
-#include <set>
+#include "hopnet-net.h"
 
 namespace hopnet::core::test {
-
-namespace {
-
-using swarm::core::RouteAction;
-
-/// A lossless, instantaneous radio over a fixed graph carrying ants and data,
-/// every node an IntraZone + InterZone pair. Frames are delivered in FIFO
-/// order, so the copy that took fewer hops arrives first.
-class Net {
-public:
-    explicit Net(Config cfg = {}, std::uint64_t seed = 1) : cfg_(cfg), rng_(seed) {}
-
-    void link(NodeAddress a, NodeAddress b) {
-        adj[a].insert(b);
-        adj[b].insert(a);
-        node(a);
-        node(b);
-    }
-    /// Removes a link from the radio only: the nodes notice by themselves.
-    void cut(NodeAddress a, NodeAddress b) {
-        adj[a].erase(b);
-        adj[b].erase(a);
-    }
-    IntraZone& intra(NodeAddress n) { return node(n).intra; }
-    InterZone& inter(NodeAddress n) { return node(n).inter; }
-    FakeClock& clock() { return clock_; }
-
-    /// One period of internal ants, every node in ascending order; the logs
-    /// below start empty after it.
-    void period() {
-        for (const auto& kv : adj) {
-            emit(kv.first, {{intra(kv.first).onInternalAntTimer()}, kInvalidAddress}, nullptr);
-            run();
-        }
-        ants.clear();
-        drops.clear();
-    }
-    /// A data packet from the transport at `src`; the network then runs to quiet.
-    Outcome send(NodeAddress src, NodeAddress dst) {
-        DataHeader h{.source = src, .destination = dst};
-        const Outcome o = inter(src).routeData(h, kInvalidAddress);
-        emit(src, o, &h);
-        run();
-        return o;
-    }
-    /// Delivers `ant` to `to` as if `from` had sent it, then runs to quiet.
-    Outcome inject(NodeAddress to, const Ant& ant, NodeAddress from) {
-        const Outcome o = inter(to).onReceive(ant, from);
-        emit(to, o, nullptr);
-        run();
-        return o;
-    }
-
-    std::map<NodeAddress, std::set<NodeAddress>> adj;
-    /// Every ant unicast: (from, to, ant).
-    struct Sent {
-        NodeAddress from, to;
-        Ant ant;
-    };
-    std::vector<Sent> ants;
-    std::vector<std::pair<NodeAddress, DataHeader>> delivered;
-    std::vector<std::pair<NodeAddress, NodeAddress>> dataHops;  // (from, to)
-    std::map<NodeAddress, int> drops;                           // per node, ants and data
-    std::map<NodeAddress, std::vector<DataHeader>> queued;      // per node
-
-private:
-    struct Node {
-        Node(const Config& cfg, NodeAddress self, FakeClock& clock, FakeLinkState& link, IRng& rng)
-            : intra(cfg, self, clock, link, rng), inter(cfg, intra, clock) {}
-        IntraZone intra;
-        InterZone inter;
-    };
-    struct Frame {
-        NodeAddress from, to;
-        bool isData;
-        Ant ant;
-        DataHeader data;
-    };
-    Node& node(NodeAddress n) {
-        auto it = nodes_.find(n);
-        if (it == nodes_.end())
-            it = nodes_.emplace(n, std::make_unique<Node>(cfg_, n, clock_, link_[n], rng_)).first;
-        return *it->second;
-    }
-    void emit(NodeAddress at, const Outcome& o, const DataHeader* h) {
-        for (const Decision& d : o.decisions) {
-            switch (d.action) {
-            case RouteAction::Broadcast:
-                for (NodeAddress to : adj[at])
-                    air_.push_back({at, to, false, *d.message, {}});
-                break;
-            case RouteAction::Unicast:
-                if (d.message) {
-                    ants.push_back({at, d.nextHop, *d.message});
-                    if (adj[at].count(d.nextHop))
-                        air_.push_back({at, d.nextHop, false, *d.message, {}});
-                } else if (h) {
-                    dataHops.emplace_back(at, d.nextHop);
-                    if (adj[at].count(d.nextHop)) {
-                        air_.push_back({at, d.nextHop, true, {}, *h});
-                    } else {  // the MAC reports the failure
-                        DataHeader again = *h;
-                        emit(at, inter(at).onDataSendFailure(again, d.nextHop), &again);
-                    }
-                }
-                break;
-            case RouteAction::Deliver:
-                if (h) delivered.emplace_back(at, *h);
-                break;
-            case RouteAction::Queue:
-                if (h) queued[at].push_back(*h);
-                break;
-            case RouteAction::Drop:
-                ++drops[at];
-                break;
-            default:
-                break;
-            }
-        }
-        if (o.routeReady != kInvalidAddress) {  // re-offer what waits for it
-            std::vector<DataHeader> waiting;
-            std::erase_if(queued[at], [&](const DataHeader& q) {
-                if (q.destination != o.routeReady) return false;
-                waiting.push_back(q);
-                return true;
-            });
-            for (DataHeader& q : waiting)
-                emit(at, inter(at).routeData(q, kInvalidAddress), &q);
-        }
-    }
-    void run() {
-        while (!air_.empty()) {
-            Frame f = air_.front();
-            air_.pop_front();
-            if (f.isData) {
-                emit(f.to, inter(f.to).routeData(f.data, f.from), &f.data);
-            } else {
-                emit(f.to, inter(f.to).onReceive(f.ant, f.from), nullptr);
-            }
-        }
-    }
-
-    Config cfg_;
-    FakeClock clock_;
-    SeededRng rng_;
-    std::map<NodeAddress, FakeLinkState> link_;
-    std::map<NodeAddress, std::unique_ptr<Node>> nodes_;
-    std::deque<Frame> air_;
-};
-
-// [W07] Fig. 4.1 as the pre-registration reads it (#5 (b), (d)), radius 2:
-// S reaches A and D through C, F and G through E; D's peripheral nodes are S
-// and A (through C), K (through J and L) and M (through I); M's are D, U and
-// R; U and R both have T in their zones, U one hop nearer.
-enum : NodeAddress { S = 1, C, A, D, E, F, G, I, M, J, K, L, O, U, P, R, V, T };
-
-Net fig41(std::uint64_t seed = 1) {
-    Net net(Config{}, seed);
-    for (auto [a, b] : std::vector<std::pair<NodeAddress, NodeAddress>>{{S, C},
-                                                                        {C, A},
-                                                                        {C, D},
-                                                                        {S, E},
-                                                                        {E, F},
-                                                                        {E, G},
-                                                                        {D, I},
-                                                                        {I, M},
-                                                                        {D, J},
-                                                                        {J, K},
-                                                                        {D, L},
-                                                                        {L, K},
-                                                                        {M, O},
-                                                                        {O, U},
-                                                                        {M, P},
-                                                                        {P, R},
-                                                                        {R, V},
-                                                                        {V, T},
-                                                                        {U, T}})
-        net.link(a, b);
-    net.period();
-    return net;
-}
-
-std::set<NodeAddress> targetsSentBy(const Net& net, NodeAddress n, std::size_t from = 0) {
-    std::set<NodeAddress> out;
-    for (std::size_t i = from; i < net.ants.size(); ++i) {
-        const auto& s = net.ants[i];
-        if (s.from == n && s.ant.type == AntType::ExternalForward && s.ant.path.back().node == n)
-            out.insert(s.ant.target);
-    }
-    return out;
-}
-
-std::vector<NodeAddress> nodesOf(const VisitedPath& p) {
-    std::vector<NodeAddress> out;
-    for (const auto& h : p.hops())
-        out.push_back(h.node);
-    return out;
-}
-
-/// Gives `z` a one-hop route to each of `nbrs` (cell (n, n), hops 1).
-void neighbours(IntraZone& z, std::initializer_list<NodeAddress> nbrs, std::uint32_t seq = 1) {
-    for (NodeAddress n : nbrs) {
-        Ant a{.type = AntType::InternalForward,
-              .source = n,
-              .seq = seq,
-              .hops = 1,
-              .time = 0.01,
-              .path = VisitedPath(100)};
-        a.path.push(n, 0.01);
-        z.onReceive(a, n);
-    }
-}
-
-/// An external forward ant for `dest` that `last` bordercast toward `target`.
-Ant externalAnt(NodeAddress src, NodeAddress dest, std::uint32_t seq,
-                std::initializer_list<NodeAddress> path, NodeAddress target) {
-    Ant a{.type = AntType::ExternalForward,
-          .source = src,
-          .destination = dest,
-          .seq = seq,
-          .time = 0.01,
-          .path = VisitedPath(100),
-          .target = target,
-          .travelled = 2};
-    double t = 0.0;
-    for (NodeAddress n : path)
-        a.path.push(n, t += 0.002);
-    return a;
-}
-
-}  // namespace
 
 void TestBordercastFig41(Checker& c) {
     // #5 (b) pinned on Fig. 4.1.
@@ -517,8 +280,9 @@ void TestDataSendFailure(Checker& c) {
     c.check(net.delivered[0].second.travelled == 2, "the failed hop is not counted");
     net.cut(0, 2);
     net.send(0, 3);
-    c.check(net.delivered.size() == 20 && net.drops[0] == 1 && net.ants.empty(),
-            "no neighbour left toward the target: dropped (local repair: the next slice)");
+    c.check(
+        net.delivered.size() == 20 && net.drops[0] == 1 && net.ants.empty(),
+        "an intra-zone packet with no neighbour left toward it: dropped, no repair ([W07] §4.3)");
 }
 
 void TestInterRtHitAtPeripheral(Checker& c) {
@@ -639,7 +403,7 @@ void TestInterZoneMalformed(Checker& c) {
     for (AntType t : {AntType::Notification, AntType::Error}) {
         Ant n = a;
         n.type = t;
-        c.check(dropped(n), "notification and error ants: the local-repair slice");
+        c.check(dropped(n), "a notification or error ant with a one-node Path");
     }
     DataHeader h{.source = S, .destination = T, .target = C, .route = {S, D, T}};
     c.check(z.routeData(h, S).decisions[0].action == RouteAction::Drop,

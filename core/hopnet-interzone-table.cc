@@ -10,8 +10,8 @@ namespace hopnet::core {
 InterZoneTable::InterZoneTable(std::size_t capacity, Time lifetime)
     : capacity_(std::max<std::size_t>(capacity, 1)), lifetime_(lifetime) {}
 
-bool InterZoneTable::insert(std::uint32_t seq, std::vector<NodeAddress> path, Time delay,
-                            Time now) {
+bool InterZoneTable::insert(std::uint32_t seq, std::vector<NodeAddress> path, Time delay, Time now,
+                            NodeAddress replaces) {
     if (path.size() < 2) return false;
     const NodeAddress dest = path.back();
     auto it = routes_.find(dest);
@@ -21,8 +21,11 @@ bool InterZoneTable::insert(std::uint32_t seq, std::vector<NodeAddress> path, Ti
         purge(now);
         if (routes_.size() >= capacity_) return false;  // full of live records
     }
-    routes_[dest] =
-        InterRoute{.seq = seq, .path = std::move(path), .expire = now + lifetime_, .delay = delay};
+    routes_[dest] = InterRoute{.seq = seq,
+                               .path = std::move(path),
+                               .expire = now + lifetime_,
+                               .delay = delay,
+                               .replaces = replaces};
     return true;
 }
 
