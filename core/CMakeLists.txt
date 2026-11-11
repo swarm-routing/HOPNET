@@ -63,6 +63,7 @@ add_library(hopnet_core STATIC
   hopnet-interzone.cc
   hopnet-intrazone-table.cc
   hopnet-intrazone.cc
+  hopnet-repair.cc
 )
 target_include_directories(hopnet_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(hopnet_core PUBLIC swarm_core_primitives)
@@ -72,6 +73,7 @@ add_executable(hopnet_core_tests
   test/run-core-tests.cc
   test/test-interzone.cc
   test/test-intrazone.cc
+  test/test-repair.cc
   test/test-wire.cc
 )
 target_link_libraries(hopnet_core_tests PRIVATE hopnet_core)

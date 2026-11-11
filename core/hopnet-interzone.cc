@@ -75,7 +75,7 @@ Outcome InterZone::routeData(DataHeader& header, NodeAddress from) {
         header.target = *std::next(it);
     }
     if (header.target == kInvalidAddress) return one(Decision::drop());
-    return one(sendData(header));
+    return forward(header);
 }
 
 Decision InterZone::sendData(DataHeader& header, NodeAddress exclude) {
@@ -89,7 +89,24 @@ Decision InterZone::sendData(DataHeader& header, NodeAddress exclude) {
 Outcome InterZone::onDataSendFailure(DataHeader& header, NodeAddress nextHop) {
     intra_.onLinkFailure(nextHop);                 // #5 (e): the row goes at once
     if (header.travelled > 0) --header.travelled;  // the failed hop was not travelled
-    return one(sendData(header));                  // another neighbour toward the target, or Drop
+    if (header.travelled >= config_.maxHopsTravelled()) return one(Decision::drop());
+    Decision d = sendData(header);  // another neighbour toward the target
+    if (d.action != RouteAction::Drop) return one(std::move(d));
+    // No other neighbour toward the target (#5 (e)). Inside the zone the
+    // IntraRT heals by itself ([W07] §4.3, first case).
+    if (header.route.empty() || header.destination == kInvalidAddress) return one(d);
+    if (header.source != intra_.self()) return startRepair(header);
+    // At the source the repair is its own discovery, under the retry policy;
+    // nobody is notified (#5 (i)). Its record through the lost link goes.
+    const NodeAddress dest = header.destination;
+    if (const InterRoute* r = table_.find(dest, clock_.now());
+        r && r->path.size() >= 2 && r->path[1] == header.target) {
+        table_.erase(dest);
+    }
+    Outcome out;
+    out.decisions = discover(dest);
+    out.decisions.push_back(Decision::queue(dest));
+    return out;
 }
 
 // ---- discovery -----------------------------------------------------------
@@ -169,7 +186,7 @@ Outcome InterZone::onReceive(const Ant& ant, NodeAddress from) {
         return one(intra_.onReceive(ant, from));
     case AntType::Notification:
     case AntType::Error:
-        return one(Decision::drop());  // §4.3's local repair: the next slice
+        return onRepairAnt(ant, from);
     default:
         return one(intra_.onReceive(ant, from));
     }
@@ -261,12 +278,23 @@ Outcome InterZone::onExternalBackward(const Ant& ant, NodeAddress from) {
     if (self == ant.destination) {
         // The source of the discovery stores the Path, [W07] p. 27; the
         // backward ant deposits no pheromone (#5 (d)).
+        // A backward ant from a destination this node is repairing toward ends
+        // the repair (#5 (i)): the record remembers the route it replaces.
         std::vector<NodeAddress> path;
         for (const auto& h : hops)
             path.push_back(h.node);
+        const auto rep = repairs_.find(ant.source);
+        const NodeAddress replaces = rep != repairs_.end() ? rep->second.lost : kInvalidAddress;
         Outcome out = one(Decision::none());
-        if (table_.insert(ant.seq, std::move(path), ant.time, clock_.now())) {
+        const Time now = clock_.now();
+        if (table_.insert(ant.seq, std::move(path), ant.time, now, replaces)) {
             out.routeReady = ant.source;
+            if (rep != repairs_.end()) {
+                std::vector<Decision> ants =
+                    repairSucceeded(rep->second, *table_.find(ant.source, now), ant);
+                repairs_.erase(rep);
+                if (!ants.empty()) out.decisions = std::move(ants);
+            }
         }
         return out;
     }
