@@ -71,10 +71,11 @@ core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
 # RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
 # only tracked files, deterministically: hopnet-<ver>/ with
 # core/ with its LICENSE, docs/ (and ns3/ once it exists),
-# the licence files, README.md and CHANGELOG.md (once the first bump writes it).
+# the licence files, README.md, AGENTS.md, the Makefile and CHANGELOG.md (once
+# the first bump writes it).
 RELEASE_VERSION ?= $(shell sed -n 's/^version = "\(.*\)"$$/\1/p' .cz.toml)
 dist: ## the release asset in dist/: hopnet-<ver>.tar.gz
 	rm -rf dist && mkdir -p dist
 	git archive --format=tar.gz --prefix=hopnet-$(RELEASE_VERSION)/ -o dist/hopnet-$(RELEASE_VERSION).tar.gz HEAD \
-		$$(git ls-tree --name-only HEAD core ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md CHANGELOG.md)
+		$$(git ls-tree --name-only HEAD core ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md AGENTS.md Makefile CHANGELOG.md)
 	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/core/LICENSE'
