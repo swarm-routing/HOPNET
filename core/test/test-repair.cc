@@ -4,8 +4,8 @@
 // [W07] §4.3's local repair against readings (i)-(l), accepted on #5 on
 // 2026-11-11: the repair ant (i), the notification ant and the spliced route
 // (j), the invalid routes the ants remove (k), the sources told (l); plus the
-// repair wait, the buffer bound, a repair at a transit relay ((m), awaiting
-// the maintainer) and determinism.
+// repair wait, the buffer bound, a repair at a transit relay ((m), accepted
+// 2026-11-11) and determinism.
 #include "hopnet-net.h"
 
 namespace hopnet::core::test {
@@ -424,7 +424,7 @@ void TestSpliceLoop(Checker& c) {
 }
 
 void TestRepairAtTransitRelay(Checker& c) {
-    // (m), proposed on #5 and awaiting the maintainer: the failure happens at
+    // (m), accepted on #5 (2026-11-11): the failure happens at
     // I, a transit relay between Path nodes D and M. I's prefix is <S, D, I>,
     // and its error ant names the segment <D, I, M>; S's record holds D, M
     // consecutively, so it goes.

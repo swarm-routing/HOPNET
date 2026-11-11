@@ -5,7 +5,7 @@
 // hopnet-interzone.h. Readings (i)-(l): maintainer decision of 2026-11-11 on
 // #5 (https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6783813122),
 // as proposed in comment 6782460458. A repair at a transit relay (between two
-// Path nodes) is reading (m), proposed on #5 (comment 6784087133) and awaiting
+// Path nodes) is reading (m), proposed on #5 (comment 6784087133) and accepted
 // the maintainer.
 #include "hopnet-interzone.h"
 
@@ -71,7 +71,7 @@ std::vector<NodeAddress> InterZone::prefixHere(const DataHeader& header) const {
         return {route.begin(), route.begin() + at + 1};
     }
     // A transit relay, between the Path node before the target and the
-    // target: (m), awaiting the maintainer on #5.
+    // target: (m), accepted on #5 (2026-11-11).
     const long target = indexOf(route, header.target);
     if (target <= 0) return {};
     std::vector<NodeAddress> out(route.begin(), route.begin() + target);
@@ -278,7 +278,7 @@ bool InterZone::invalidated(const InterRoute& record, const Ant& ant) const {
     // goes through M and, after M, differs from the notification's Path after
     // M; an error ant every record through M. A record never names a transit
     // relay, so for an error ant the two Path nodes around M, consecutive in a
-    // record, count as "through M" as well ((m), awaiting the maintainer).
+    // record, count as "through M" as well ((m), accepted on #5, 2026-11-11).
     const NodeAddress m = ant.source;
     const std::vector<NodeAddress> path = nodesOf(ant.path);
     const long inRecord = indexOf(record.path, m);
