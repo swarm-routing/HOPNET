@@ -6,7 +6,7 @@ section a task needs, not the whole file.
 
 ## Current state
 
-**Status: `core/` in progress** (#5; the maintainer started it on 2026-11-10; fidelity sheet #4). HOPNET was a stretch goal in AntHocNet v2.5.0 and was never implemented there: there is no arm and no data. [`docs/fidelity.md`](docs/fidelity.md) maps the thesis (and the AntHocNet comparison it ran) row by row; `core/` is written from it, intra-zone half first.
+**Status: `core/` in progress** (#5; the maintainer started it on 2026-11-10; fidelity sheet #4). HOPNET was a stretch goal in AntHocNet v2.5.0 and was never implemented there: there is no arm and no data. [`docs/fidelity.md`](docs/fidelity.md) maps the thesis (and the AntHocNet comparison it ran) row by row; `core/` is written from it in slices: the intra-zone half, then the inter-zone discovery and forwarding; the local repair of §4.3 is next.
 
 ## Glossary
 

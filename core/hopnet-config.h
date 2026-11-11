@@ -59,6 +59,43 @@ struct Config {
     /// capacity": 4096, repo choice; bounded (org rule 7).
     std::size_t intraRtCapacity = 4096;
 
+    /// InterRT records (destinations). Fidelity "InterRT capacity": 4096,
+    /// repo choice; bounded (org rule 7).
+    std::size_t interRtCapacity = 4096;
+
+    /// An InterRT record expires this long after its last use, seconds; each
+    /// data packet sent on it refreshes it. Fidelity "InterRT Expire time":
+    /// 3 s, repo choice (#5; RFC 3561 ACTIVE_ROUTE_TIMEOUT).
+    Time routeLifetime = 3.0;
+
+    /// At most one route discovery per destination per this many seconds.
+    /// Fidelity "Route-discovery retry policy at the source": 1 s, repo choice
+    /// (#4; AntHocNet's Config::reactiveRetryInterval).
+    Time discoveryRetryInterval = 1.0;
+
+    /// Local repair ([W07] §4.3, p. 29: no backward ant "after a period of
+    /// time"): the repairing node waits repairWaitFactor x the lost path's
+    /// estimated delay for the backward ant, or repairTimeout with no estimate.
+    /// Fidelity "Local-repair wait": 5 and 1 s, repo choice (#4; AntHocNet's
+    /// Config::repairWaitFactor and Config::repairTimeout).
+    double repairWaitFactor = 5.0;
+    Time repairTimeout = 1.0;
+
+    /// The local-repair buffer: 64 packets, each held at most 3 s. Fidelity
+    /// "Local-repair buffer": repo choice (#4; AntHocNet's ns-3 pending queue).
+    /// The adapter's queue holds the packets (HOPNET golden rule 10) with these
+    /// bounds; the core bounds by the capacity the sources a repair tells
+    /// (#5 (l), org rule 7).
+    std::size_t repairBufferCapacity = 64;
+    Time repairBufferTimeout = 3.0;
+
+    /// Hops an external ant or a data packet may travel in all, bordercasters
+    /// and transit relays alike: the Path cap's 100, which is what AntHocNet's
+    /// maxPathLength bounds (every hop). Fidelity "Hops an external ant or a
+    /// data packet may travel": accepted on #5 (g) (sheet review point 2),
+    /// maintainer decision 2026-11-10.
+    std::size_t maxHopsTravelled() const { return maxPathLength; }
+
     /// Seconds without an ant after which a neighbour is dropped.
     Time neighbourTimeout() const { return internalAntPeriod * allowedAntLoss; }
 };

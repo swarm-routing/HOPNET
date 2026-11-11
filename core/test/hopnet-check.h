@@ -97,6 +97,27 @@ void TestSelection(Checker& c);
 void TestBounds(Checker& c);
 void TestMalformedAnts(Checker& c);
 void TestDeterminism(Checker& c);
+void TestBordercastFig41(Checker& c);
+void TestBordercastSkipByBestNeighbour(Checker& c);
+void TestDiscoveryFig41(Checker& c);
+void TestIntraZoneData(Checker& c);
+void TestDestinationGenerations(Checker& c);
+void TestInterRtTable(Checker& c);
+void TestInterRtExpiry(Checker& c);
+void TestDiscoveryRetry(Checker& c);
+void TestDataSendFailure(Checker& c);
+void TestInterRtHitAtPeripheral(Checker& c);
+void TestTravelledBound(Checker& c);
+void TestInterZoneMalformed(Checker& c);
+void TestDataWire(Checker& c);
+void TestInterZoneDeterminism(Checker& c);
+void TestRepairSuccess(Checker& c);
+void TestRepairFailure(Checker& c);
+void TestRepairSources(Checker& c);
+void TestNotificationInvalid(Checker& c);
+void TestSpliceLoop(Checker& c);
+void TestRepairAtTransitRelay(Checker& c);
+void TestRepairDeterminism(Checker& c);
 
 inline const std::vector<NamedTest>& AllTests() {
     static const std::vector<NamedTest> tests = {
@@ -114,6 +135,27 @@ inline const std::vector<NamedTest>& AllTests() {
         {"bounds", TestBounds},
         {"malformed-ants", TestMalformedAnts},
         {"determinism", TestDeterminism},
+        {"bordercast-fig41", TestBordercastFig41},
+        {"bordercast-skip-best-neighbour", TestBordercastSkipByBestNeighbour},
+        {"discovery-fig41", TestDiscoveryFig41},
+        {"intrazone-data", TestIntraZoneData},
+        {"destination-generations", TestDestinationGenerations},
+        {"interrt-table", TestInterRtTable},
+        {"interrt-expiry", TestInterRtExpiry},
+        {"discovery-retry", TestDiscoveryRetry},
+        {"data-send-failure", TestDataSendFailure},
+        {"interrt-hit-at-peripheral", TestInterRtHitAtPeripheral},
+        {"travelled-bound", TestTravelledBound},
+        {"interzone-malformed", TestInterZoneMalformed},
+        {"data-wire", TestDataWire},
+        {"interzone-determinism", TestInterZoneDeterminism},
+        {"repair-success", TestRepairSuccess},
+        {"repair-failure", TestRepairFailure},
+        {"repair-sources", TestRepairSources},
+        {"notification-invalid", TestNotificationInvalid},
+        {"splice-loop", TestSpliceLoop},
+        {"repair-at-transit-relay", TestRepairAtTransitRelay},
+        {"repair-determinism", TestRepairDeterminism},
     };
     return tests;
 }

@@ -12,7 +12,9 @@
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
 
-**Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) is written and tested; the inter-zone half and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
+**Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) and the inter-zone half's route discovery and data forwarding (bordercasting, InterRT) are written and tested; the local repair and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
+
+**Release status:** the first release, v0.1.0, comes before the comparator gates (maintainer decision 2026-11-10): it has **not** cleared them (org golden rule 6: fidelity sheet, per-PR delivery smoke, anchor). It ships `core/` and `docs/`; the ns-3 module `hopnet` and the anchor are pending, so no number from v0.1.0 counts as a benchmark result. The gated release is proposed as v0.2.0. Releases are cut by [`release.yml`](https://github.com/swarm-routing/HOPNET/blob/main/.github/workflows/release.yml) and listed under [Releases](https://github.com/swarm-routing/HOPNET/releases).
 
 ## Epics
 
@@ -23,7 +25,7 @@ What is planned and in progress here: the issues labelled [`epic`](https://githu
 
 | Epic | Status | Sub-issues closed |
 |------|--------|-------------------|
-| [#3](https://github.com/swarm-routing/HOPNET/issues/3) HOPNET as a standalone hexagonal protocol (later: not scheduled) | In progress | 1 / 3 |
+| [#3](https://github.com/swarm-routing/HOPNET/issues/3) HOPNET as a standalone hexagonal protocol (scheduled after Termite) | In progress | 1 / 3 |
 
 <!-- epics:end -->
 

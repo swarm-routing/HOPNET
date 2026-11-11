@@ -7,14 +7,16 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half is written; the inter-zone half, the ns-3 module and the gates are not.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
+**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11; the ns-3 module and the gates are not. The ns-3 module waits until ARA's builds green against swarm-core (maintainer decision 2026-11-10, #3).** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
 ```
 core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR GPL-2.0-only, core/LICENSE):
             hopnet-config.h (parameters, each citing its fidelity row), hopnet-ant (the ant header + wire codec),
-            hopnet-intrazone-table (IntraRT), hopnet-intrazone (internal ants, eqs. 4.1-4.3, neighbours, selection);
+            hopnet-intrazone-table (IntraRT), hopnet-intrazone (internal ants, eqs. 4.1-4.3, neighbours, selection),
+            hopnet-interzone-table (InterRT), hopnet-interzone (bordercasting, external ants, data routing),
+            hopnet-data (the data header + wire codec);
             test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: SWARM_CORE_REF in core/CMakeLists.txt)
 ns3/        (planned) contrib module `hopnet` (GPL-2.0-only): adapter, helper, examples, test suite
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
