@@ -33,6 +33,11 @@ struct InterRoute {
     /// T(S, D), the path time the discovering ants measured: the local-repair
     /// wait's estimate (fidelity, "Local-repair wait").
     Time delay = 0.0;
+    /// A record a local repair stored ([W07] §4.3): the node after this one on
+    /// the route the repair replaced (the far end of the broken link, or the
+    /// Path node a transit relay was routing to). A packet still bound for it
+    /// takes this record instead (#5 (i)). kInvalidAddress otherwise.
+    NodeAddress replaces = swarm::core::kInvalidAddress;
 
     bool operator==(const InterRoute&) const = default;
 };
@@ -45,8 +50,10 @@ public:
 
     /// Inserts the record for `dest` (path.back()) unless an unexpired one
     /// holds a SeqNo >= `seq`. A full table first drops its expired records,
-    /// then refuses a new destination. Returns true when stored.
-    bool insert(std::uint32_t seq, std::vector<NodeAddress> path, Time delay, Time now);
+    /// then refuses a new destination. Returns true when stored. `replaces`:
+    /// see InterRoute::replaces.
+    bool insert(std::uint32_t seq, std::vector<NodeAddress> path, Time delay, Time now,
+                NodeAddress replaces = swarm::core::kInvalidAddress);
 
     /// The unexpired record for `dest`, or nullptr.
     const InterRoute* find(NodeAddress dest, Time now) const;
