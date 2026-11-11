@@ -8,8 +8,9 @@
 
 namespace hopnet::core {
 
-IntraZoneTable::IntraZoneTable(std::size_t capacity, double evaporation)
-    : pheromone_(capacity), retain_(1.0 - evaporation) {}
+IntraZoneTable::IntraZoneTable(std::size_t capacity, double evaporation,
+                               swarm::core::IRouterObserver* observer)
+    : pheromone_(capacity), retain_(1.0 - evaporation), observer_(observer) {}
 
 bool IntraZoneTable::update(NodeAddress column, NodeAddress neighbour, double deposit, int hops,
                             std::uint32_t seq) {
@@ -17,6 +18,7 @@ bool IntraZoneTable::update(NodeAddress column, NodeAddress neighbour, double de
     const Key key{column, neighbour};
     auto it = meta_.find(key);
     if (it != meta_.end() && it->second.seq == seq) return false;
+    const bool created = it == meta_.end();
     if (!pheromone_.add(column, neighbour, deposit)) return false;  // full: no new cell
     Cell& c = meta_[key];
     c.hops = hops;
@@ -25,6 +27,7 @@ bool IntraZoneTable::update(NodeAddress column, NodeAddress neighbour, double de
     for (const auto& e : pheromone_.entries(column)) {  // eq. 4.2
         if (e.neighbor != neighbour) pheromone_.set(column, e.neighbor, e.value * retain_);
     }
+    if (created && observer_) observer_->onRouteChanged(column, neighbour, true);
     return true;
 }
 
@@ -37,7 +40,11 @@ std::optional<Cell> IntraZoneTable::cell(NodeAddress column, NodeAddress neighbo
 }
 
 std::size_t IntraZoneTable::removeNeighbour(NodeAddress neighbour) {
-    std::erase_if(meta_, [neighbour](const auto& kv) { return kv.first.second == neighbour; });
+    std::erase_if(meta_, [&](const auto& kv) {
+        if (kv.first.second != neighbour) return false;
+        if (observer_) observer_->onRouteChanged(kv.first.first, neighbour, false);
+        return true;
+    });
     return pheromone_.eraseNeighbor(neighbour);
 }
 

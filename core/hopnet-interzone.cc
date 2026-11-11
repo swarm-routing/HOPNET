@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-only
 #include "hopnet-interzone.h"
 
+#include "hopnet-observe.h"
+
 #include <algorithm>
 #include <cmath>
 #include <iterator>
@@ -34,13 +36,39 @@ Outcome one(Decision d) {
 
 }  // namespace
 
-InterZone::InterZone(const Config& config, IntraZone& intra, const IClock& clock)
-    : config_(config), intra_(intra), clock_(clock),
-      table_(config.interRtCapacity, config.routeLifetime), bordercast_(config.historyCapacity) {}
+InterZone::InterZone(const Config& config, IntraZone& intra, const IClock& clock,
+                     swarm::core::IRouterObserver* observer)
+    : config_(config), intra_(intra), clock_(clock), observer_(observer),
+      table_(config.interRtCapacity, config.routeLifetime, observer),
+      bordercast_(config.historyCapacity) {
+    intra_.trackInterRt(&table_);
+}
+
+// ---- observation ---------------------------------------------------------
+
+Outcome InterZone::observed(Outcome o, NodeAddress dest, bool data) {
+    if (observer_) {
+        for (const Decision& d : o.decisions) {
+            observeSent(observer_, d);
+            if (data) observeData(observer_, dest, d);
+        }
+    }
+    intra_.reportState();
+    return o;
+}
+
+Outcome InterZone::observedAnt(Outcome o, const Ant& received) {
+    observeReceived(observer_, received);
+    return observed(std::move(o), kInvalidAddress, false);
+}
 
 // ---- data ----------------------------------------------------------------
 
 Outcome InterZone::routeData(DataHeader& header, NodeAddress from) {
+    return observed(routeDataInner(header, from), header.destination, true);
+}
+
+Outcome InterZone::routeDataInner(DataHeader& header, NodeAddress from) {
     const NodeAddress self = intra_.self();
     if (header.destination == kInvalidAddress || from == self) return one(Decision::drop());
     if (header.destination == self) return one(Decision::deliver());
@@ -62,7 +90,7 @@ Outcome InterZone::routeData(DataHeader& header, NodeAddress from) {
             return one(std::move(d));
         }
         Outcome out;
-        out.decisions = discover(header.destination);
+        out.decisions = discoverInner(header.destination);
         out.decisions.push_back(Decision::queue(header.destination));
         return out;
     }
@@ -87,6 +115,10 @@ Decision InterZone::sendData(DataHeader& header, NodeAddress exclude) {
 }
 
 Outcome InterZone::onDataSendFailure(DataHeader& header, NodeAddress nextHop) {
+    return observed(onDataSendFailureInner(header, nextHop), header.destination, true);
+}
+
+Outcome InterZone::onDataSendFailureInner(DataHeader& header, NodeAddress nextHop) {
     intra_.onLinkFailure(nextHop);                 // #5 (e): the row goes at once
     if (header.travelled > 0) --header.travelled;  // the failed hop was not travelled
     if (header.travelled >= config_.maxHopsTravelled()) return one(Decision::drop());
@@ -104,7 +136,7 @@ Outcome InterZone::onDataSendFailure(DataHeader& header, NodeAddress nextHop) {
         table_.erase(dest);
     }
     Outcome out;
-    out.decisions = discover(dest);
+    out.decisions = discoverInner(dest);
     out.decisions.push_back(Decision::queue(dest));
     return out;
 }
@@ -112,6 +144,13 @@ Outcome InterZone::onDataSendFailure(DataHeader& header, NodeAddress nextHop) {
 // ---- discovery -----------------------------------------------------------
 
 std::vector<Decision> InterZone::discover(NodeAddress dest) {
+    std::vector<Decision> out = discoverInner(dest);
+    for (const Decision& d : out)
+        observeSent(observer_, d);
+    return out;
+}
+
+std::vector<Decision> InterZone::discoverInner(NodeAddress dest) {
     const NodeAddress self = intra_.self();
     if (dest == kInvalidAddress || dest == self) return {};
     const Time now = clock_.now();
@@ -178,15 +217,16 @@ Decision InterZone::relay(Ant ant, bool appendSelf, NodeAddress exclude) {
 
 Outcome InterZone::onReceive(const Ant& ant, NodeAddress from) {
     if (from == intra_.self() || from == kInvalidAddress) return one(Decision::drop());
+    // The intra-zone ants are reported by IntraZone::onReceive itself.
     switch (ant.type) {
     case AntType::ExternalForward:
-        return onExternalForward(ant, from);
+        return observedAnt(onExternalForward(ant, from), ant);
     case AntType::Backward:
-        if (ant.target != kInvalidAddress) return onExternalBackward(ant, from);
+        if (ant.target != kInvalidAddress) return observedAnt(onExternalBackward(ant, from), ant);
         return one(intra_.onReceive(ant, from));
     case AntType::Notification:
     case AntType::Error:
-        return onRepairAnt(ant, from);
+        return observedAnt(onRepairAnt(ant, from), ant);
     default:
         return one(intra_.onReceive(ant, from));
     }

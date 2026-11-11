@@ -26,6 +26,13 @@
 // at most Config::repairBufferTimeout) and the repair timer. A Unicast
 // decision with no message sends the data packet, its header as the call
 // left it.
+//
+// Observation (#40): the same optional swarm::core::IRouterObserver* as the
+// IntraZone's, which the adapter hands to both. This half reports the external
+// forward and backward, notification and error ants it sends and receives,
+// the InterRT records added and removed, and a decision for every data packet
+// (Unicast = forwarded, Queue, Drop, Deliver, DiscardPending). The observer
+// only reads: the decisions are the same with and without one.
 #ifndef HOPNET_CORE_INTERZONE_H
 #define HOPNET_CORE_INTERZONE_H
 
@@ -35,6 +42,7 @@
 #include "hopnet-interzone-table.h"
 #include "hopnet-intrazone.h"
 #include "swarm-dedup-history.h"
+#include "swarm-observer.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -73,7 +81,13 @@ class InterZone {
 public:
     /// `intra` is this node's intra-zone half (its IntraRT, selection, edge
     /// time and SeqNo counter); it and the clock must outlive the object.
-    InterZone(const Config& config, IntraZone& intra, const IClock& clock);
+    /// `observer` is the one `intra` was given, or null. The InterRT is
+    /// registered with `intra` (IntraZone::trackInterRt), so an InterZone
+    /// stays where it was constructed.
+    InterZone(const Config& config, IntraZone& intra, const IClock& clock,
+              swarm::core::IRouterObserver* observer = nullptr);
+    InterZone(const InterZone&) = delete;
+    InterZone& operator=(const InterZone&) = delete;
 
     /// A data packet at this node: from the local transport (`from` =
     /// kInvalidAddress, header.source = self) or from neighbour `from`. Fills
@@ -130,6 +144,19 @@ private:
         std::map<NodeAddress, DataHeader> sources;
     };
 
+    // The public entry points, unobserved; the public ones report what these
+    // return (hopnet-observe.h).
+    Outcome routeDataInner(DataHeader& header, NodeAddress from);
+    Outcome resumeInner(DataHeader& header);
+    Outcome onDataSendFailureInner(DataHeader& header, NodeAddress nextHop);
+    Outcome onRepairTimeoutInner(NodeAddress dest);
+    std::vector<Decision> discoverInner(NodeAddress dest);
+    /// Reports the ants `o` sends, and, for a data entry point, its data
+    /// decisions for `dest`; then the footprint. Returns `o` unchanged.
+    Outcome observed(Outcome o, NodeAddress dest, bool data);
+    /// As observed() for the ant just received.
+    Outcome observedAnt(Outcome o, const Ant& received);
+
     Outcome onExternalForward(const Ant& ant, NodeAddress from);
     Outcome onExternalBackward(const Ant& ant, NodeAddress from);
     Outcome atDestination(const Ant& ant);
@@ -164,6 +191,7 @@ private:
     Config config_;
     IntraZone& intra_;
     const IClock& clock_;
+    swarm::core::IRouterObserver* observer_;
     InterZoneTable table_;
     swarm::core::DedupHistory bordercast_;           // external forward ants seen as a bordercaster
     std::map<NodeAddress, std::uint32_t> accepted_;  // per source, as a destination
