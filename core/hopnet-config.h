@@ -59,6 +59,27 @@ struct Config {
     /// capacity": 4096, repo choice; bounded (org rule 7).
     std::size_t intraRtCapacity = 4096;
 
+    /// InterRT records (destinations). Fidelity "InterRT capacity": 4096,
+    /// repo choice; bounded (org rule 7).
+    std::size_t interRtCapacity = 4096;
+
+    /// An InterRT record expires this long after its last use, seconds; each
+    /// data packet sent on it refreshes it. Fidelity "InterRT Expire time":
+    /// 3 s, repo choice (#5; RFC 3561 ACTIVE_ROUTE_TIMEOUT).
+    Time routeLifetime = 3.0;
+
+    /// At most one route discovery per destination per this many seconds.
+    /// Fidelity "Route-discovery retry policy at the source": 1 s, repo choice
+    /// (#4; AntHocNet's Config::reactiveRetryInterval).
+    Time discoveryRetryInterval = 1.0;
+
+    /// Hops an external ant or a data packet may travel in all, bordercasters
+    /// and transit relays alike: the Path cap's 100, which is what AntHocNet's
+    /// maxPathLength bounds (every hop). Fidelity "Hops an external ant or a
+    /// data packet may travel": accepted on #5 (g) (sheet review point 2),
+    /// maintainer decision 2026-11-10.
+    std::size_t maxHopsTravelled() const { return maxPathLength; }
+
     /// Seconds without an ant after which a neighbour is dropped.
     Time neighbourTimeout() const { return internalAntPeriod * allowedAntLoss; }
 };

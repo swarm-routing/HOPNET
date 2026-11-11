@@ -19,7 +19,7 @@ SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
 SWARM_CORE_REF ?= 206954e225f1098eb78fb8c2a72ffdd77627d7a8
 
 .DEFAULT_GOAL := help
-.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core
+.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core dist
 
 help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -40,7 +40,7 @@ format: org-tools ## apply the formatters
 	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format-18 --style=$(CLANG_STYLE) -i
 
 clean: ## remove build outputs
-	rm -rf build
+	rm -rf build dist
 
 shell: ## an interactive shell in the dev image with this repo at /src
 	@command -v docker >/dev/null || { echo "make shell: docker not found (Docker Desktop, Colima, or docker.io)" >&2; exit 127; }
@@ -66,3 +66,16 @@ ci: check ## exactly what CI runs
 
 core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
 	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure
+
+# The release asset for swarm-routing/.github's reusable-release.yml, which sets
+# RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
+# only tracked files, deterministically: hopnet-<ver>/ with
+# core/ with its LICENSE, docs/ (and ns3/ once it exists),
+# the licence files, README.md, AGENTS.md, the Makefile and CHANGELOG.md (once
+# the first bump writes it).
+RELEASE_VERSION ?= $(shell sed -n 's/^version = "\(.*\)"$$/\1/p' .cz.toml)
+dist: ## the release asset in dist/: hopnet-<ver>.tar.gz
+	rm -rf dist && mkdir -p dist
+	git archive --format=tar.gz --prefix=hopnet-$(RELEASE_VERSION)/ -o dist/hopnet-$(RELEASE_VERSION).tar.gz HEAD \
+		$$(git ls-tree --name-only HEAD core ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md AGENTS.md Makefile CHANGELOG.md)
+	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/core/LICENSE'
