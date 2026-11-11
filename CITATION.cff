@@ -1,5 +1,6 @@
 # Citation File Format (https://citation-file-format.github.io), seeded by
-# swarm-routing/.github org-sync (`citation = true`); the repository's own once
+# swarm-routing/.github org-sync (`citation = true`; `citation_type` and
+# `[[references]]` in .github/org-sync.toml); the repository's own once
 # written. Commitizen keeps `version:` in step (`.cz.toml` version_files
 # "CITATION.cff:^version:"); swarm-routing/.github tools/zenodo reads the
 # concept DOI from `doi:` once the first release is archived on Zenodo.
@@ -26,3 +27,36 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.24125265"
     description: "Concept DOI: always resolves to the latest released version."
+references:
+  - type: thesis
+    title: "HOPNET: A Hybrid ant colony OPtimization routing algorithm for Mobile ad hoc NETwork"
+    authors:
+      - family-names: "Wang"
+        given-names: "Jianping"
+    institution:
+      name: "University of Manitoba"
+    thesis-type: "MSc thesis"
+    year: 2007
+    url: "https://hdl.handle.net/1993/20935"
+    notes: "The primary source this repository implements; every parameter in docs/fidelity.md cites it. No DOI: a thesis in the University of Manitoba's MSpace repository."
+  - type: article
+    title: "HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network"
+    authors:
+      - family-names: "Wang"
+        given-names: "Jianping"
+      - family-names: "Osagie"
+        given-names: "Eseosa"
+      - family-names: "Thulasiraman"
+        given-names: "Parimala"
+      - family-names: "Thulasiram"
+        given-names: "Ruppa K."
+    journal: "Ad Hoc Networks"
+    volume: "7"
+    issue: "4"
+    start: "690"
+    end: "705"
+    year: 2009
+    publisher:
+      name: "Elsevier BV"
+    doi: "10.1016/j.adhoc.2008.06.001"
+    notes: "The journal version of the thesis."
