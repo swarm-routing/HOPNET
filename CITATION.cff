@@ -38,7 +38,7 @@ references:
     thesis-type: "MSc thesis"
     year: 2007
     url: "https://hdl.handle.net/1993/20935"
-    notes: "The primary source this repository implements; every parameter in docs/fidelity.md cites it. No DOI: a thesis in the University of Manitoba's MSpace repository."
+    notes: "The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices. No DOI: a thesis in the University of Manitoba's MSpace repository."
   - type: article
     title: "HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network"
     authors:

@@ -37,7 +37,7 @@ venue = "University of Manitoba"
 thesis_type = "MSc thesis"
 url = "https://hdl.handle.net/1993/20935"
 no_doi = "a thesis in the University of Manitoba's MSpace repository."
-role = "The primary source this repository implements; every parameter in docs/fidelity.md cites it."
+role = "The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices."
 
 [[references]]
 type = "article"

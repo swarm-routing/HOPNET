@@ -35,7 +35,7 @@ Each release also has its own **version DOI**, listed on [its Zenodo record](htt
 
 Please also cite the work it builds on:
 
-- J. Wang, *HOPNET: A Hybrid ant colony OPtimization routing algorithm for Mobile ad hoc NETwork*, University of Manitoba, 2007, <https://hdl.handle.net/1993/20935> (no DOI: a thesis in the University of Manitoba's MSpace repository). The primary source this repository implements; every parameter in docs/fidelity.md cites it.
+- J. Wang, *HOPNET: A Hybrid ant colony OPtimization routing algorithm for Mobile ad hoc NETwork*, University of Manitoba, 2007, <https://hdl.handle.net/1993/20935> (no DOI: a thesis in the University of Manitoba's MSpace repository). The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices.
 - J. Wang, E. Osagie, P. Thulasiraman, R. K. Thulasiram, *HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network*, Ad Hoc Networks 7(4), pp. 690–705, 2009, [doi:10.1016/j.adhoc.2008.06.001](https://doi.org/10.1016/j.adhoc.2008.06.001). The journal version of the thesis.
 
 What this implementation reproduces from its sources, and every deliberate deviation, is in [docs/fidelity.md](docs/fidelity.md).
