@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-only
 #include "hopnet-intrazone.h"
 
+#include "hopnet-observe.h"
 #include "swarm-selection.h"
 
 #include <algorithm>
@@ -19,9 +20,10 @@ bool positiveFinite(double v) {
 }  // namespace
 
 IntraZone::IntraZone(const Config& config, NodeAddress self, const IClock& clock,
-                     const ILinkState& link, IRng& rng)
+                     const ILinkState& link, IRng& rng, swarm::core::IRouterObserver* observer)
     : config_(config), self_(self), clock_(clock), link_(link), rng_(rng),
-      table_(config.intraRtCapacity, config.evaporation), forwarded_(config.historyCapacity) {}
+      table_(config.intraRtCapacity, config.evaporation, observer),
+      forwarded_(config.historyCapacity), observer_(observer) {}
 
 Decision IntraZone::onInternalAntTimer() {
     purgeStaleNeighbours();
@@ -35,19 +37,29 @@ Decision IntraZone::onInternalAntTimer() {
             .time = edgeTime(kInvalidAddress),
             .path = VisitedPath(config_.maxPathLength)};
     ant.path.push(self_, ant.time);
-    return Decision::broadcast(ant);
+    Decision d = Decision::broadcast(ant);
+    observeSent(observer_, d);
+    return d;
 }
 
 Decision IntraZone::onReceive(const Ant& ant, NodeAddress from) {
     if (from == self_ || from == kInvalidAddress) return Decision::drop();
+    Decision d;
     switch (ant.type) {
     case AntType::InternalForward:
-        return onInternalForward(ant, from);
+        observeReceived(observer_, ant);
+        d = onInternalForward(ant, from);
+        break;
     case AntType::Backward:
-        return onInternalBackward(ant, from);
+        if (ant.target == kInvalidAddress) observeReceived(observer_, ant);  // else external
+        d = onInternalBackward(ant, from);
+        break;
     default:
         return Decision::drop();  // the inter-zone half's: InterZone::onReceive
     }
+    observeSent(observer_, d);
+    reportState();
+    return d;
 }
 
 Decision IntraZone::onInternalForward(const Ant& ant, NodeAddress from) {
@@ -120,6 +132,7 @@ void IntraZone::heard(NodeAddress neighbour) {
 void IntraZone::onLinkFailure(NodeAddress neighbour) {
     table_.removeNeighbour(neighbour);
     lastHeard_.erase(neighbour);
+    reportState();
 }
 
 void IntraZone::purgeStaleNeighbours() {
@@ -132,6 +145,19 @@ void IntraZone::purgeStaleNeighbours() {
             ++it;
         }
     }
+    reportState();
+}
+
+void IntraZone::reportState() {
+    if (!observer_) return;
+    const std::size_t entries = table_.size() + (interTable_ ? interTable_->size() : 0);
+    const std::size_t bytes = table_.bytes() + (interTable_ ? interTable_->bytes() : 0);
+    const auto e = static_cast<std::uint32_t>(entries);
+    const auto b = static_cast<std::uint32_t>(bytes);
+    if (e == reportedEntries_ && b == reportedBytes_) return;
+    reportedEntries_ = e;
+    reportedBytes_ = b;
+    observer_->onStateSize(e, b);
 }
 
 NodeAddress IntraZone::selectNextHop(NodeAddress dest, NodeAddress exclude) {

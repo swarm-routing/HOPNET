@@ -7,8 +7,9 @@
 
 namespace hopnet::core {
 
-InterZoneTable::InterZoneTable(std::size_t capacity, Time lifetime)
-    : capacity_(std::max<std::size_t>(capacity, 1)), lifetime_(lifetime) {}
+InterZoneTable::InterZoneTable(std::size_t capacity, Time lifetime,
+                               swarm::core::IRouterObserver* observer)
+    : capacity_(std::max<std::size_t>(capacity, 1)), lifetime_(lifetime), observer_(observer) {}
 
 bool InterZoneTable::insert(std::uint32_t seq, std::vector<NodeAddress> path, Time delay, Time now,
                             NodeAddress replaces) {
@@ -21,11 +22,20 @@ bool InterZoneTable::insert(std::uint32_t seq, std::vector<NodeAddress> path, Ti
         purge(now);
         if (routes_.size() >= capacity_) return false;  // full of live records
     }
-    routes_[dest] = InterRoute{.seq = seq,
-                               .path = std::move(path),
-                               .expire = now + lifetime_,
-                               .delay = delay,
-                               .replaces = replaces};
+    const NodeAddress next = path[1];
+    InterRoute& slot = routes_[dest];
+    const bool created = slot.path.empty();  // a stored record has a Path of two or more
+    const NodeAddress oldNext = created ? swarm::core::kInvalidAddress : slot.path[1];
+    pathNodes_ = pathNodes_ - slot.path.size() + path.size();
+    slot = InterRoute{.seq = seq,
+                      .path = std::move(path),
+                      .expire = now + lifetime_,
+                      .delay = delay,
+                      .replaces = replaces};
+    if (observer_ && (created || oldNext != next)) {
+        if (!created) observer_->onRouteChanged(dest, oldNext, false);
+        observer_->onRouteChanged(dest, next, true);
+    }
     return true;
 }
 
@@ -43,11 +53,24 @@ bool InterZoneTable::use(NodeAddress dest, Time now) {
 }
 
 bool InterZoneTable::erase(NodeAddress dest) {
-    return routes_.erase(dest) > 0;
+    const auto it = routes_.find(dest);
+    if (it == routes_.end()) return false;
+    forget(it->first, it->second);
+    routes_.erase(it);
+    return true;
 }
 
 std::size_t InterZoneTable::purge(Time now) {
-    return std::erase_if(routes_, [now](const auto& kv) { return now >= kv.second.expire; });
+    return std::erase_if(routes_, [&](const auto& kv) {
+        if (now < kv.second.expire) return false;
+        forget(kv.first, kv.second);
+        return true;
+    });
+}
+
+void InterZoneTable::forget(NodeAddress dest, const InterRoute& route) {
+    pathNodes_ -= route.path.size();
+    if (observer_) observer_->onRouteChanged(dest, route.path[1], false);
 }
 
 }  // namespace hopnet::core

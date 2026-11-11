@@ -118,8 +118,12 @@ Outcome InterZone::forward(DataHeader& header) {
 }
 
 Outcome InterZone::resume(DataHeader& header) {
+    return observed(resumeInner(header), header.destination, true);
+}
+
+Outcome InterZone::resumeInner(DataHeader& header) {
     const NodeAddress self = intra_.self();
-    if (header.source == self) return routeData(header, kInvalidAddress);
+    if (header.source == self) return routeDataInner(header, kInvalidAddress);
     if (header.destination == kInvalidAddress || header.destination == self ||
         header.target == kInvalidAddress || header.target == self || prefixHere(header).empty()) {
         return one(Decision::drop());
@@ -257,6 +261,10 @@ Decision InterZone::errorAnt(const DataHeader& header) {
 }
 
 Outcome InterZone::onRepairTimeout(NodeAddress dest) {
+    return observed(onRepairTimeoutInner(dest), dest, true);
+}
+
+Outcome InterZone::onRepairTimeoutInner(NodeAddress dest) {
     const auto it = repairs_.find(dest);
     if (it == repairs_.end() || clock_.now() < it->second.deadline) return {};
     // No backward ant "after a period of time" ([W07] p. 29): every buffered

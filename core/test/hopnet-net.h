@@ -28,7 +28,10 @@ using swarm::core::RouteAction;
 /// order, so the copy that took fewer hops arrives first.
 class Net {
 public:
-    explicit Net(Config cfg = {}, std::uint64_t seed = 1) : cfg_(cfg), rng_(seed) {}
+    /// `observer` (optional) is handed to every node's two halves.
+    explicit Net(Config cfg = {}, std::uint64_t seed = 1,
+                 swarm::core::IRouterObserver* observer = nullptr)
+        : cfg_(cfg), rng_(seed), observer_(observer) {}
 
     void link(NodeAddress a, NodeAddress b) {
         adj[a].insert(b);
@@ -116,8 +119,9 @@ public:
 
 private:
     struct Node {
-        Node(const Config& cfg, NodeAddress self, FakeClock& clock, FakeLinkState& link, IRng& rng)
-            : intra(cfg, self, clock, link, rng), inter(cfg, intra, clock) {}
+        Node(const Config& cfg, NodeAddress self, FakeClock& clock, FakeLinkState& link, IRng& rng,
+             swarm::core::IRouterObserver* observer)
+            : intra(cfg, self, clock, link, rng, observer), inter(cfg, intra, clock, observer) {}
         IntraZone intra;
         InterZone inter;
     };
@@ -134,7 +138,9 @@ private:
     Node& node(NodeAddress n) {
         auto it = nodes_.find(n);
         if (it == nodes_.end())
-            it = nodes_.emplace(n, std::make_unique<Node>(cfg_, n, clock_, link_[n], rng_)).first;
+            it = nodes_
+                     .emplace(n, std::make_unique<Node>(cfg_, n, clock_, link_[n], rng_, observer_))
+                     .first;
         return *it->second;
     }
     void emit(NodeAddress at, const Outcome& o, const DataHeader* h) {
@@ -204,6 +210,7 @@ private:
     Config cfg_;
     FakeClock clock_;
     SeededRng rng_;
+    swarm::core::IRouterObserver* observer_;
     std::map<NodeAddress, FakeLinkState> link_;
     std::map<NodeAddress, std::unique_ptr<Node>> nodes_;
     std::deque<Frame> air_;
@@ -216,8 +223,9 @@ private:
 // R; U and R both have T in their zones, U one hop nearer.
 enum : NodeAddress { S = 1, C, A, D, E, F, G, I, M, J, K, L, O, U, P, R, V, T };
 
-inline Net fig41(std::uint64_t seed = 1, Config cfg = {}) {
-    Net net(cfg, seed);
+inline Net fig41(std::uint64_t seed = 1, Config cfg = {},
+                 swarm::core::IRouterObserver* observer = nullptr) {
+    Net net(cfg, seed, observer);
     for (auto [a, b] : std::vector<std::pair<NodeAddress, NodeAddress>>{{S, C},
                                                                         {C, A},
                                                                         {C, D},
