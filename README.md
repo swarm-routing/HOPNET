@@ -20,6 +20,24 @@ HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colon
 
 **Release status:** the first release, v0.1.0, comes before the comparator gates (maintainer decision 2026-11-10): it has **not** cleared them (org golden rule 6: fidelity sheet, per-PR delivery smoke, anchor). It ships `core/` and `docs/`; the ns-3 module `hopnet` and the anchor are pending, so no number from v0.1.0 counts as a benchmark result. The gated release is proposed as v0.2.0; the ladder is in [docs/roadmap.md](docs/roadmap.md). Releases are cut by [`release.yml`](https://github.com/swarm-routing/HOPNET/blob/main/.github/workflows/release.yml) and listed under [Releases](https://github.com/swarm-routing/HOPNET/releases).
 
+<!-- org-sync:begin citing -->
+## Releases & citing
+
+Versions follow [SemVer](https://semver.org) ([CHANGELOG.md](CHANGELOG.md)). Each release is listed under [Releases](https://github.com/swarm-routing/HOPNET/releases), built by the org's release workflow and archived on [Zenodo](https://zenodo.org) with its own DOI.
+
+To cite this repository, use the “Cite this repository” button (from [CITATION.cff](CITATION.cff)):
+
+| DOI | resolves to |
+|---|---|
+| [`10.5281/zenodo.24125265`](https://doi.org/10.5281/zenodo.24125265) | **concept DOI**: always the latest release. This is the badge above, and the right citation when you mean this project. |
+
+Each release also has its own **version DOI**, listed on [its Zenodo record](https://doi.org/10.5281/zenodo.24125265): cite that one when you reproduce a number measured at that release.
+
+What this implementation reproduces from its sources, and every deliberate deviation, is in [docs/fidelity.md](docs/fidelity.md).
+
+Using it in your work? Contributions are welcome, and citing the DOI helps just as much.
+<!-- org-sync:end citing -->
+
 ## Epics
 
 <!-- epics:begin -->
