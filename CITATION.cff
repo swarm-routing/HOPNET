@@ -17,10 +17,8 @@ authors:
     given-names: Daniel Henrique
     orcid: "https://orcid.org/0009-0009-6436-8174"
 version: 0.1.0
-# Per directory (LICENSING.md): core/ MIT OR GPL-2.0-only, the rest
-# GPL-2.0-only. CFF takes a list of SPDX ids, not an expression.
-license:
-  - GPL-2.0-only
-  - MIT
+# The work as a whole is GPL-2.0-only; the MIT option applies only to
+# the dual-licensed directories, listed per directory in LICENSING.md.
+license: GPL-2.0-only
 repository-code: "https://github.com/swarm-routing/HOPNET"
 url: "https://github.com/swarm-routing/HOPNET"
