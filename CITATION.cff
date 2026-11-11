@@ -1,0 +1,26 @@
+# Citation File Format (https://citation-file-format.github.io), seeded by
+# swarm-routing/.github org-sync (`citation = true`); the repository's own once
+# written. Commitizen keeps `version:` in step (`.cz.toml` version_files
+# "CITATION.cff:^version:"); swarm-routing/.github tools/zenodo reads the
+# concept DOI from `doi:` once the first release is archived on Zenodo.
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "HOPNET"
+abstract: >-
+  HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs:
+  ant-colony routing over routing zones, proactive inside a zone and reactive
+  between zones. Planned as a simulator-agnostic C++ core and an ns-3 contrib
+  module on swarm-core.
+type: software
+authors:
+  - family-names: Joppi
+    given-names: Daniel Henrique
+    orcid: "https://orcid.org/0009-0009-6436-8174"
+version: 0.1.0
+# Per directory (LICENSING.md): core/ MIT OR GPL-2.0-only, the rest
+# GPL-2.0-only. CFF takes a list of SPDX ids, not an expression.
+license:
+  - GPL-2.0-only
+  - MIT
+repository-code: "https://github.com/swarm-routing/HOPNET"
+url: "https://github.com/swarm-routing/HOPNET"

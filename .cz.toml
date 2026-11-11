@@ -12,4 +12,5 @@ version_scheme = "semver"
 tag_format = "v$version"
 major_version_zero = true
 update_changelog_on_bump = true
+version_files = ["CITATION.cff:^version:"]
 template = ".cz-changelog.md.j2"
