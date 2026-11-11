@@ -24,6 +24,7 @@
 #define HOPNET_CORE_ANT_H
 
 #include "hopnet-config.h"
+#include "swarm-observer.h"
 #include "swarm-types.h"
 #include "swarm-visited-path.h"
 
@@ -73,6 +74,13 @@ struct Ant {
 
     bool operator==(const Ant&) const = default;
 };
+
+/// The names of the ant types, keyed by the wire type byte (AntType), for
+/// swarm-core's observer: the ns-3 module registers this table once
+/// (SwarmRoutingHelper::SetKindNames), so readers print "ExternalForward", not
+/// "1". The internal and the external backward ant share type 2, as on the
+/// wire.
+std::span<const swarm::core::KindName> kindNames();
 
 /// Appends the encoded ant to `out`.
 void encode(const Ant& ant, std::vector<std::uint8_t>& out);

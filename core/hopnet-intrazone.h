@@ -12,12 +12,20 @@
 // for each ant, then carries out the RouteDecision returned (HOPNET golden rule
 // 10). Time comes through swarm-core's IClock, the edge time through its
 // ILinkState, randomness through its IRng (org rule 5).
+//
+// Observation (#40): an optional swarm::core::IRouterObserver* (null: none)
+// hears the internal and backward ants this half sends and receives, the
+// IntraRT cells added and removed, and the footprint of the node's two
+// tables. The observer only reads: the decisions are the same with and
+// without one (hopnet-observe.h).
 #ifndef HOPNET_CORE_INTRAZONE_H
 #define HOPNET_CORE_INTRAZONE_H
 
 #include "hopnet-ant.h"
 #include "hopnet-config.h"
+#include "hopnet-interzone-table.h"
 #include "hopnet-intrazone-table.h"
+#include "swarm-observer.h"
 #include "swarm-dedup-history.h"
 #include "swarm-ports.h"
 #include "swarm-route-decision.h"
@@ -34,9 +42,9 @@ using Decision = swarm::core::RouteDecision<Ant>;
 
 class IntraZone {
 public:
-    /// The ports must outlive the object.
+    /// The ports (and `observer`, when given) must outlive the object.
     IntraZone(const Config& config, NodeAddress self, const IClock& clock, const ILinkState& link,
-              IRng& rng);
+              IRng& rng, swarm::core::IRouterObserver* observer = nullptr);
 
     /// Every Config::internalAntPeriod: drops neighbours silent for
     /// Config::neighbourTimeout(), then returns the broadcast of a new internal
@@ -48,6 +56,7 @@ public:
     /// while Hops is left, else turned into a backward ant. Backward ants:
     /// eq. 4.3 into cell (from, source), then on along Path. Other types are
     /// the inter-zone half's (InterZone::onReceive, which calls this): Drop.
+    /// Only the ants this half handles are reported to the observer.
     Decision onReceive(const Ant& ant, NodeAddress from);
 
     /// A unicast transmission to `neighbour` failed (the adapter reports MAC
@@ -67,6 +76,15 @@ public:
     /// or Config::defaultHopTime before the first MAC sample (fidelity, edge
     /// time row; #5).
     double edgeTime(NodeAddress nextHop) const;
+
+    /// Reports the node's routing-state footprint (IntraRT cells plus the
+    /// InterRT records of the table registered by trackInterRt()) to the
+    /// observer, if it changed since the last report. Called after every
+    /// entry point that can change a table; "on demand" for the adapter.
+    void reportState();
+    /// The InterRT of this node's InterZone, so the footprint covers both
+    /// tables (InterZone's constructor calls it; the table must outlive this).
+    void trackInterRt(const InterZoneTable* table) { interTable_ = table; }
 
     const IntraZoneTable& table() const { return table_; }
     NodeAddress self() const { return self_; }
@@ -93,6 +111,10 @@ private:
     swarm::core::DedupHistory forwarded_;    // first copies of internal forward ants
     std::map<NodeAddress, Time> lastHeard_;  // rows only, so bounded by the table
     std::uint32_t seq_ = 0;
+    swarm::core::IRouterObserver* observer_;
+    const InterZoneTable* interTable_ = nullptr;
+    std::uint32_t reportedEntries_ = 0;
+    std::uint32_t reportedBytes_ = 0;  // both start at 0: an empty footprint is not news
 };
 
 }  // namespace hopnet::core
