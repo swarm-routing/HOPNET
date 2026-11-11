@@ -2,6 +2,7 @@
 
 <!-- org-sync:begin badges -->
 [![Release](https://img.shields.io/github/v/release/swarm-routing/HOPNET?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/HOPNET/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24125265.svg)](https://doi.org/10.5281/zenodo.24125265)
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff)
 [![Licence: GPL-2.0-only, core/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org)
