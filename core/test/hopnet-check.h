@@ -111,6 +111,13 @@ void TestTravelledBound(Checker& c);
 void TestInterZoneMalformed(Checker& c);
 void TestDataWire(Checker& c);
 void TestInterZoneDeterminism(Checker& c);
+void TestRepairSuccess(Checker& c);
+void TestRepairFailure(Checker& c);
+void TestRepairSources(Checker& c);
+void TestNotificationInvalid(Checker& c);
+void TestSpliceLoop(Checker& c);
+void TestRepairAtTransitRelay(Checker& c);
+void TestRepairDeterminism(Checker& c);
 
 inline const std::vector<NamedTest>& AllTests() {
     static const std::vector<NamedTest> tests = {
@@ -142,6 +149,13 @@ inline const std::vector<NamedTest>& AllTests() {
         {"interzone-malformed", TestInterZoneMalformed},
         {"data-wire", TestDataWire},
         {"interzone-determinism", TestInterZoneDeterminism},
+        {"repair-success", TestRepairSuccess},
+        {"repair-failure", TestRepairFailure},
+        {"repair-sources", TestRepairSources},
+        {"notification-invalid", TestNotificationInvalid},
+        {"splice-loop", TestSpliceLoop},
+        {"repair-at-transit-relay", TestRepairAtTransitRelay},
+        {"repair-determinism", TestRepairDeterminism},
     };
     return tests;
 }
