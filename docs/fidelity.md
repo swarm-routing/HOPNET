@@ -21,12 +21,27 @@ read from the page image, not only from the OCR text.
 
 ## Sources
 
-| Key | Citation | Access |
+<!-- fidelity:sources:begin -->
+| Key | Citation | Link |
 |---|---|---|
-| W07 | J. Wang, *HOPNET: A Hybrid ant colony OPtimization routing algorithm for Mobile ad hoc NETwork*, MSc thesis, University of Manitoba, December 2007 (MSpace hdl 1993/20935). The primary source: the only HOPNET text the org holds in full | in hand |
-| W09 | J. Wang, E. Osagie, P. Thulasiraman, R. K. Thulasiram, *HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network*, Ad Hoc Networks 7(4):690–705, 2009, DOI 10.1016/j.adhoc.2008.06.001 (Crossref and Semantic Scholar: 2009; OpenAlex gives 2008, the online-first year). The journal version. **Not held** (Elsevier, paywalled; listed in the papers library's MANUAL-DOWNLOADS.md). No row cites it | institution |
-| DDG04 | G. Di Caro, F. Ducatelle, L. M. Gambardella, *AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks*, Parallel Problem Solving from Nature – PPSN VIII, LNCS 3242, pp. 461–470, Springer, 2004, DOI 10.1007/978-3-540-30217-9_47 (verified against Crossref). AntHocNet's reference paper, and the source of the AntHocNet experiments [W07] §5.4 compares against (see *The comparison the thesis ran*) | in hand |
-| DDG05 | G. Di Caro, F. Ducatelle, L. M. Gambardella, *AntHocNet: an adaptive nature-inspired algorithm for routing in mobile ad hoc networks*, European Transactions on Telecommunications 16(5):443–455, 2005, DOI 10.1002/ett.1062 (verified against Crossref; [W07]'s bibliography entry [5] gives the issue as 16(2)). The paper [W07] cites as its AntHocNet reference. Held as its preprint, IDSIA Technical Report IDSIA-27-04-2004; locators below are the preprint's | in hand |
+| DDG04 | Di Caro, Ducatelle & Gambardella, *AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks*, Parallel Problem Solving from Nature - PPSN VIII, 2004, pp. 461–470 | <https://doi.org/10.1007/978-3-540-30217-9_47> |
+| DDG05 | Di Caro, Ducatelle & Gambardella, *AntHocNet: an adaptive nature‐inspired algorithm for routing in mobile ad hoc networks*, European Transactions on Telecommunications 16(5), 2005, pp. 443–455 | <https://doi.org/10.1002/ett.1062> |
+| SwarmCore | Joppi, *ns3-swarm-core*, version v0.1.0, Zenodo, 2026 | <https://doi.org/10.5281/zenodo.24138628> |
+| W07 | Wang, *HOPNET: a Hybrid ant colony OPtimization routing algorithm for mobile ad hoc NETwork*, Master's thesis, University of Manitoba, 2008 | <https://hdl.handle.net/1993/20935> |
+| W09 | Wang et al., *HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network*, Ad Hoc Networks 7(4), 2009, pp. 690–705 | <https://doi.org/10.1016/j.adhoc.2008.06.001> |
+<!-- fidelity:sources:end -->
+
+The entries live in [`references.bib`](references.bib); the table is
+generated from it (`fidelity.py bib sources`). [W07] is the primary source,
+the only HOPNET text read in full; its title page is dated December 2007, and
+the University of Manitoba's record gives 2008. [W09] is the journal version;
+it has not been read, and no row cites it (Crossref and Semantic Scholar date
+it 2009, OpenAlex 2008, the online-first year). [DDG04] is AntHocNet's
+reference paper and the source of the AntHocNet experiments [W07] §5.4
+compares against (see *The comparison the thesis ran*). [DDG05] is the paper
+[W07] cites as its AntHocNet reference ([W07]'s bibliography entry [5] gives
+the issue as 16(2)); it was read as its preprint, IDSIA Technical Report
+IDSIA-27-04-2004, and the locators below are the preprint's.
 
 ## Which version of HOPNET
 
