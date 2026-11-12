@@ -19,7 +19,7 @@ description = "HOPNET (Wang, 2007) as a standalone swarm routing protocol for MA
 homepage = "https://swarm-routing.github.io/arena/HOPNET/"
 topics = ["hopnet", "ant-colony-optimization", "aco", "zone-routing", "swarm-intelligence", "manet", "ad-hoc-routing", "routing-protocol", "ns-3"]
 ruleset = "protocol"
-required_checks = ["check / org-sync", "headers / licence", "title / title", "core-test", "core-format", "swarm-core / pin"]
+required_checks = ["check / org-sync", "headers / licence", "title / title", "core-test", "core-format", "swarm-core / pin", "review / coderabbit"]
 # Merge through a merge queue (swarm-routing/.github#130); every workflow behind a required
 # check also runs on merge_group.
 merge_queue = true
