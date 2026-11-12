@@ -26,7 +26,7 @@ read from the page image, not only from the OCR text.
 |---|---|---|
 | DDG04 | Di Caro, Ducatelle & Gambardella, *AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks*, Parallel Problem Solving from Nature - PPSN VIII, 2004, pp. 461–470 | <https://doi.org/10.1007/978-3-540-30217-9_47> |
 | DDG05 | Di Caro, Ducatelle & Gambardella, *AntHocNet: an adaptive nature‐inspired algorithm for routing in mobile ad hoc networks*, European Transactions on Telecommunications 16(5), 2005, pp. 443–455 | <https://doi.org/10.1002/ett.1062> |
-| SwarmCore | Joppi, *ns3-swarm-core*, version v0.1.0, Zenodo, 2026 | <https://doi.org/10.5281/zenodo.24138628> |
+| SwarmCore | Joppi, *ns3-swarm-core*, Zenodo, 2026 | <https://doi.org/10.5281/zenodo.24138628> |
 | W07 | Wang, *HOPNET: a Hybrid ant colony OPtimization routing algorithm for mobile ad hoc NETwork*, Master's thesis, University of Manitoba, 2008 | <https://hdl.handle.net/1993/20935> |
 | W09 | Wang et al., *HOPNET: A hybrid ant colony optimization routing algorithm for mobile ad hoc network*, Ad Hoc Networks 7(4), 2009, pp. 690–705 | <https://doi.org/10.1016/j.adhoc.2008.06.001> |
 <!-- fidelity:sources:end -->
