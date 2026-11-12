@@ -80,7 +80,9 @@ Org-wide (1–9), then this repo's own.
    readers/writers, a leading version byte, and deterministic roundtrip + fuzz
    tests. Changing a field or its units bumps the version byte.
 4. **No contrib module named `core`** (collides with ns-3's `src/core`). The
-   shared module is `swarm-core` (`#include "ns3/swarm-core-module.h"`).
+   shared module is `swarm-core` (`#include "ns3/swarm-core-module.h"`), and
+   every protocol builds on it, AntHocNet included: `core/` on its `core/`, the
+   ns-3 adapter on `SwarmRoutingBase` (swarm-routing/ns3-swarm-core#14).
 5. **Determinism.** A fixed `--seed=<N>` gives byte-identical output. All
    randomness through the simulator's seeded streams or an injected RNG port;
    never libc `rand()`, wall-clock time, or unordered-container iteration order
@@ -105,7 +107,7 @@ Org-wide (1–9), then this repo's own.
 10. **`core/` never includes a simulator header**; the adapter only converts headers, executes `RouteDecision`s and owns timers/queues (AntHocNet golden rules 1–2).
 11. **Fidelity sheet before code.** Every parameter cites its thesis section or is marked a repo choice / unknown (zone radius, ant rates, the AntHocNet configuration the thesis compared against); deviations live in `docs/fidelity.md`.
 12. **The anchor is against AntHocNet.** The thesis's headline trend is HOPNET vs AntHocNet, so its anchor run pairs the two through `swarm-routing/ns3-tools`; the AntHocNet configuration used is pinned and stated. If the thesis leaves it unrecoverable, the arm ships as a written infeasibility verdict.
-13. **Written fresh.** No AntHocNet code exists for HOPNET; `core/` (dual) is original work, and anything reused from another protocol keeps that protocol's licence and provenance. The thesis stays in the private `swarm-routing/papers` repo if not openly redistributable.
+13. **Written fresh.** No AntHocNet code exists for HOPNET; `core/` (dual) is original work, and anything reused from another protocol keeps that protocol's licence and provenance. If the thesis is not openly redistributable, its copy stays in a private paper store the maintainer keeps, never in this public repository.
 
 ## Conventions
 
@@ -115,7 +117,8 @@ Org-wide (1–9), then this repo's own.
   (`bug`/`enhancement`/`chore`/`documentation`/`verification`, plus `epic` for
   umbrellas), area label(s) (`protocol`/`adapter`/`ns3`/`benchmark`/
   `observability`/`packaging`/`learn-site`/`literature`), one `model:*`
-  recommendation, one `priority:P1|P2|P3` on non-epic issues, a
+  suggestion (a model on the Claude Pro plan), one `priority:P1|P2|P3` on
+  non-epic issues (none on an epic), a
   `release:vX.Y.Z` label only when a release in the repository's ladder
   (`docs/roadmap.md`; until it lands, the org ROADMAP's release train)
   gates the issue: that label set is the version's scope,
@@ -315,14 +318,24 @@ because the issue threads were thorough. Caveman the chat, not the record.
   off; on the maintainer's or an agent's commits it is expected
   (swarm-routing/.github#212). `dco` is not a required check and runs on
   `pull_request` only, so merge an outside contributor's PR, by auto-merge or
-  directly, only after `dco` passed on the head commit that merges, and
-  disable auto-merge before anyone pushes to that PR.
-- Enable auto-merge only after CodeRabbit has reviewed and its threads are
-  resolved: it is not a required check, so auto-merge does not wait for it.
-  `python3 -I ../.github/tools/pr-status/pr_status.py wait --review REPO#N`
-  (a `swarm-routing/.github` checkout next to the repository) waits for the
-  review and goes on with a warning 30 minutes after the PR opened
-  (swarm-routing/.github#238).
+  directly, only after `dco` passed on the head commit that merges. Never push
+  to an outside contributor's PR: ask them for the change, or make it in a
+  follow-up PR after the merge (swarm-routing/.github#288). If anyone pushes
+  to such a PR, the new head must pass `dco` before it can merge: with
+  auto-merge on but the PR not yet queued, disable auto-merge until it has
+  (GitHub keeps auto-merge on after a push by someone with write access); in
+  a merge queue, remove the PR from the queue (disabling auto-merge does not)
+  and enqueue it again only after `dco` passed.
+- `review / coderabbit` is a required check (the review gate,
+  swarm-routing/.github#294): it passes once CodeRabbit has reviewed the PR,
+  once it says it will not, for a draft, or 30 minutes after the PR opened
+  (then with one comment). So auto-merge may be enabled at once: the merge
+  waits for the gate, and the ruleset holds it while a CodeRabbit thread is
+  unresolved. Still read every thread and fix or answer it before resolving.
+  Where the gate is not required yet (`gh api
+  'repos/{owner}/{repo}/rules/branches/main'` does not list it), wait first
+  with `python3 -I ../.github/tools/pr-status/pr_status.py wait --review
+  REPO#N` (swarm-routing/.github#238).
 - Never add a `Signed-off-by` trailer, for the maintainer or anyone else: a
   DCO sign-off is a person's own certification (CONTRIBUTING "Outside
   contributions").
