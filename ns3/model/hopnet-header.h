@@ -9,10 +9,13 @@
 // - An ant is the whole payload of a UDP control datagram on the protocol's
 //   port: MakeAntPacket / DecodeAntPacket (fail-closed: a wrong version, an
 //   unknown type, a Path over the cap, a short buffer or trailing bytes).
-// - Every data packet carries a DataHeader in front of its transport header
-//   ([W07] p. 27: the packet is source-routed along an InterRT Path; fidelity
-//   row "Data to a destination outside the zone"): DataHeader is that
-//   ns3::Header, ReadDataHeader reads it without trusting the bytes, and
+// - Every data packet carries a DataHeader ([W07] p. 27: the packet is
+//   source-routed along an InterRT Path; fidelity row "Data to a destination
+//   outside the zone"). In a UDP datagram it rides right after the UDP
+//   header, so whatever reads the ports on the way (the harness counts
+//   routing control as UDP not addressed to the data port) still sees a data
+//   packet; in any other IP payload it rides in front. DataHeader is that
+//   ns3::Header; ReadDataHeader reads it without trusting the bytes, and
 //   AddDataHeader / StripDataHeader put it on and take it off.
 #ifndef HOPNET_HEADER_H
 #define HOPNET_HEADER_H
@@ -68,21 +71,23 @@ Ptr<Packet> MakeAntPacket(const core::Ant& ant);
 /// The ant a control payload holds, or nullopt (core::decode's rules).
 std::optional<core::Ant> DecodeAntPacket(Ptr<const Packet> p, std::size_t maxPathLength);
 
-/// A data payload's leading DataHeader and its size in bytes, or nullopt when
-/// the payload does not start with one valid header whose route holds at most
-/// `maxRouteLength` nodes. The bytes after it are not read.
+/// The DataHeader of an IPv4 payload of `protocol` (after the UDP header for
+/// UDP, 17; at the front otherwise) and its size in bytes, or nullopt when
+/// there is not one valid header whose route holds at most `maxRouteLength`
+/// nodes. The bytes after it are not read.
 struct LeadingData {
     core::DataHeader header;
     uint32_t size = 0;
 };
-std::optional<LeadingData> ReadDataHeader(Ptr<const Packet> p, std::size_t maxRouteLength);
+std::optional<LeadingData> ReadDataHeader(Ptr<const Packet> p, uint8_t protocol,
+                                          std::size_t maxRouteLength);
 
-/// A copy of `payload` (an IPv4 payload: transport header and data) with `h`
-/// in front; its tags come along.
-Ptr<Packet> AddDataHeader(Ptr<const Packet> payload, const core::DataHeader& h);
+/// A copy of `payload` (an IPv4 payload of `protocol`: transport header and
+/// data) carrying `h` where ReadDataHeader looks for it; its tags come along.
+Ptr<Packet> AddDataHeader(Ptr<const Packet> payload, uint8_t protocol, const core::DataHeader& h);
 
-/// A copy of `p` without its first `size` bytes (the header ReadDataHeader read).
-Ptr<Packet> StripDataHeader(Ptr<const Packet> p, uint32_t size);
+/// A copy of `p` without the `size` bytes of the DataHeader ReadDataHeader read.
+Ptr<Packet> StripDataHeader(Ptr<const Packet> p, uint8_t protocol, uint32_t size);
 
 }  // namespace hopnet
 }  // namespace ns3

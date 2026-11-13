@@ -20,7 +20,7 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
             test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: SWARM_CORE_REF in core/CMakeLists.txt)
 ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-core:
-  model/hopnet-header.*            the ant payload and the DataHeader in front of each data packet's transport header (core/'s codecs)
+  model/hopnet-header.*            the ant payload and the DataHeader right after each data packet's UDP header (core/'s codecs)
   model/hopnet-routing-protocol.*  the adapter: IntraZone + InterZone per node on SwarmRoutingBase (`&Observer()` to both, `kindNames()`
                                    registered once, #40); RouteInput takes every data packet; holds the packets the core queues
   helper/hopnet-helper.*           HopnetHelper (swarm-core's SwarmRoutingHelper; the WifiLinkMonitor gives the edge time)

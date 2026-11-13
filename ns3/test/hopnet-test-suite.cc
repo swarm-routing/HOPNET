@@ -6,8 +6,8 @@
 // - core/'s tests (core/test/), one TestCase each, so the debug and sanitized
 //   legs run them inside ns-3 as core.yml runs them alone;
 // - the two wire formats in ns-3 packets: the ant payload and the DataHeader
-//   in front of the transport header, roundtrip, and a seeded fuzz of both
-//   readers a received packet goes through (org rule 3);
+//   (right after a UDP header, else in front), roundtrip, and a seeded fuzz
+//   of both readers a received packet goes through (org rule 3);
 // - the adapter on a static four-node 802.11b chain with zone radius 2: the
 //   internal ants build the zones, a packet to the node three hops away (out
 //   of the source's zone) waits for an inter-zone discovery and is delivered
@@ -34,6 +34,7 @@
 #include "ns3/socket.h"
 #include "ns3/swarm-core-module.h"
 #include "ns3/test.h"
+#include "ns3/udp-header.h"
 #include "ns3/udp-socket-factory.h"
 #include "ns3/wifi-helper.h"
 #include "ns3/yans-wifi-helper.h"
@@ -128,22 +129,45 @@ private:
 
         const auto h = SampleData();
         Ptr<Packet> payload = Create<Packet>(64);
-        Ptr<Packet> q = ns3::hopnet::AddDataHeader(payload, h);
+        // Not UDP (protocol 0 here): the header goes in front.
+        Ptr<Packet> q = ns3::hopnet::AddDataHeader(payload, 0, h);
         NS_TEST_EXPECT_MSG_EQ(q->GetSize(), 64u + 17u + 4u * 3u, "17 bytes + 4 per route node");
         NS_TEST_EXPECT_MSG_EQ(Bytes(q)[0], ::hopnet::core::kDataWireVersion, "version first");
-        const auto lead = ns3::hopnet::ReadDataHeader(q, kCap);
+        const auto lead = ns3::hopnet::ReadDataHeader(q, 0, kCap);
         NS_TEST_ASSERT_MSG_EQ(lead.has_value(), true, "the data header reads");
         NS_TEST_EXPECT_MSG_EQ((lead->header == h), true, "the same header back");
         NS_TEST_EXPECT_MSG_EQ(lead->size, 29u, "its size");
-        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::StripDataHeader(q, lead->size)->GetSize(), 64u,
+        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::StripDataHeader(q, 0, lead->size)->GetSize(), 64u,
                               "the payload after it");
         ns3::hopnet::DataHeader viaHeader;
         NS_TEST_EXPECT_MSG_EQ(q->Copy()->RemoveHeader(viaHeader), 29u,
                               "RemoveHeader consumes the header");
         NS_TEST_EXPECT_MSG_EQ((viaHeader.IsValid() && viaHeader.Get() == h), true,
                               "the same header through ns3::Header");
-        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::ReadDataHeader(q, 2).has_value(), false,
+        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::ReadDataHeader(q, 0, 2).has_value(), false,
                               "a route over the cap");
+
+        // UDP: the header rides right after the UDP header, so a reader of the
+        // ports (the harness's control count) still sees the data port.
+        Ptr<Packet> datagram = Create<Packet>(64);
+        UdpHeader udp;
+        udp.SetSourcePort(49153);
+        udp.SetDestinationPort(9);
+        datagram->AddHeader(udp);
+        const std::vector<uint8_t> before = Bytes(datagram);
+        Ptr<Packet> u = ns3::hopnet::AddDataHeader(datagram, 17, h);
+        UdpHeader seen;
+        u->PeekHeader(seen);
+        NS_TEST_EXPECT_MSG_EQ(seen.GetDestinationPort(), 9u, "the UDP header stays first");
+        NS_TEST_EXPECT_MSG_EQ(Bytes(u)[8], ::hopnet::core::kDataWireVersion,
+                              "the data header right after it");
+        const auto ul = ns3::hopnet::ReadDataHeader(u, 17, kCap);
+        NS_TEST_ASSERT_MSG_EQ(ul.has_value(), true, "read after the UDP header");
+        NS_TEST_EXPECT_MSG_EQ((ul->header == h), true, "the same header back");
+        NS_TEST_EXPECT_MSG_EQ((Bytes(ns3::hopnet::StripDataHeader(u, 17, ul->size)) == before),
+                              true, "stripped: the datagram as it was");
+        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::ReadDataHeader(Create<Packet>(4), 17, kCap).has_value(),
+                              false, "shorter than a UDP header");
     }
 };
 
@@ -180,7 +204,7 @@ private:
                 ::hopnet::core::encode(*a, again);
                 NS_TEST_ASSERT_MSG_EQ((again == b), true, "an accepted ant re-encodes identically");
             }
-            if (const auto d = ns3::hopnet::ReadDataHeader(FromBytes(b), kCap)) {
+            if (const auto d = ns3::hopnet::ReadDataHeader(FromBytes(b), 0, kCap)) {
                 ++datas;
                 std::vector<uint8_t> again;
                 ::hopnet::core::encode(d->header, again);
@@ -194,7 +218,7 @@ private:
         NS_TEST_EXPECT_MSG_GT(datas, 0u, "the data fuzz reaches the accepting path");
         NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::DecodeAntPacket(Create<Packet>(), kCap).has_value(),
                               false, "empty ant payload");
-        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::ReadDataHeader(Create<Packet>(16), kCap).has_value(),
+        NS_TEST_EXPECT_MSG_EQ(ns3::hopnet::ReadDataHeader(Create<Packet>(16), 0, kCap).has_value(),
                               false, "a payload shorter than the data header");
     }
 };

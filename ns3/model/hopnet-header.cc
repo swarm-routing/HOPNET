@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "hopnet-header.h"
 
+#include "ns3/udp-header.h"
+
 #include <algorithm>
 #include <vector>
 
@@ -75,7 +77,23 @@ std::optional<core::Ant> DecodeAntPacket(Ptr<const Packet> p, std::size_t maxPat
     return core::decode(bytes, maxPathLength);
 }
 
-std::optional<LeadingData> ReadDataHeader(Ptr<const Packet> p, std::size_t maxRouteLength) {
+namespace {
+
+constexpr uint8_t kUdp = 17;
+
+/// The bytes of `p` from where the DataHeader sits: after the UDP header for
+/// UDP, all of it otherwise. Null when a UDP payload has no UDP header.
+Ptr<Packet> AtDataHeader(Ptr<const Packet> p, uint8_t protocol) {
+    Ptr<Packet> q = p->Copy();
+    if (protocol == kUdp) {
+        UdpHeader udp;
+        if (q->GetSize() < udp.GetSerializedSize()) return nullptr;
+        q->RemoveHeader(udp);
+    }
+    return q;
+}
+
+std::optional<LeadingData> ReadLeading(Ptr<const Packet> p, std::size_t maxRouteLength) {
     if (!p || p->GetSize() < DataHeader::kFixedSize) return std::nullopt;
     std::vector<uint8_t> fixed(DataHeader::kFixedSize);
     p->CopyData(fixed.data(), DataHeader::kFixedSize);
@@ -91,15 +109,31 @@ std::optional<LeadingData> ReadDataHeader(Ptr<const Packet> p, std::size_t maxRo
     return LeadingData{*h, size};
 }
 
-Ptr<Packet> AddDataHeader(Ptr<const Packet> payload, const core::DataHeader& h) {
+}  // namespace
+
+std::optional<LeadingData> ReadDataHeader(Ptr<const Packet> p, uint8_t protocol,
+                                          std::size_t maxRouteLength) {
+    if (!p) return std::nullopt;
+    return ReadLeading(AtDataHeader(p, protocol), maxRouteLength);
+}
+
+Ptr<Packet> AddDataHeader(Ptr<const Packet> payload, uint8_t protocol, const core::DataHeader& h) {
     Ptr<Packet> q = payload->Copy();
+    UdpHeader udp;
+    const bool udpFirst = protocol == kUdp && q->GetSize() >= udp.GetSerializedSize();
+    if (udpFirst) q->RemoveHeader(udp);
     q->AddHeader(DataHeader(h));
+    if (udpFirst) q->AddHeader(udp);
     return q;
 }
 
-Ptr<Packet> StripDataHeader(Ptr<const Packet> p, uint32_t size) {
+Ptr<Packet> StripDataHeader(Ptr<const Packet> p, uint8_t protocol, uint32_t size) {
     Ptr<Packet> q = p->Copy();
+    UdpHeader udp;
+    const bool udpFirst = protocol == kUdp && q->GetSize() >= udp.GetSerializedSize();
+    if (udpFirst) q->RemoveHeader(udp);
     q->RemoveAtStart(size);
+    if (udpFirst) q->AddHeader(udp);
     return q;
 }
 

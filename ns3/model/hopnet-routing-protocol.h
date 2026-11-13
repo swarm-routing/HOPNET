@@ -4,8 +4,8 @@
 // HOPNET's ns-3 adapter: an ns3::SwarmRoutingBase that hosts one node's two
 // core halves (core/hopnet-intrazone.h, core/hopnet-interzone.h) and carries
 // out their decisions (HOPNET golden rule 10). It only converts and executes:
-// ants between UDP payloads and core::Ant, data between the DataHeader in
-// front of the transport header and core::DataHeader, IPv4 addresses to core
+// ants between UDP payloads and core::Ant, data between the DataHeader
+// (right after a UDP header, hopnet-header.h) and core::DataHeader, IPv4 addresses to core
 // addresses, and the cores' decisions into sends, deliveries, drops and held
 // packets. Time, randomness and timers are swarm-core's ports over ns-3
 // (Clock(), Rng() pinned by AssignStreams, Timers()), and the edge time is the

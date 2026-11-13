@@ -33,11 +33,6 @@ const core::Config kConfig{};
 
 using swarm::core::RouteAction;
 
-// A control datagram leaves a socket bound to kHopnetPort, so both its UDP
-// ports are kHopnetPort and its first byte is 0x15; a data packet from a
-// neighbour starts with the DataHeader, whose first byte is the version.
-static_assert(core::kDataWireVersion != (RoutingProtocol::kHopnetPort >> 8));
-
 }  // namespace
 
 TypeId RoutingProtocol::GetTypeId() {
@@ -160,7 +155,7 @@ void RoutingProtocol::Process(const core::Outcome& o, Data* data, core::DataHead
 }
 
 void RoutingProtocol::SendData(const Data& data, const core::DataHeader& header, Ipv4Address next) {
-    Ptr<Packet> q = AddDataHeader(data.payload, header);
+    Ptr<Packet> q = AddDataHeader(data.payload, data.ip.GetProtocol(), header);
     Ipv4Header out = data.ip;
     out.SetPayloadSize(q->GetSize());
     if (!data.ucb.IsNull()) {
@@ -246,6 +241,8 @@ bool RoutingProtocol::RouteInput(Ptr<const Packet> p, const Ipv4Header& header,
     bool control = false;
     if (header.GetProtocol() == kUdpProtocol) {
         UdpHeader udp;
+        // A control datagram leaves a socket bound to kHopnetPort, so both
+        // its ports are; a data datagram keeps its own UDP header first.
         control = p->PeekHeader(udp) && udp.GetSourcePort() == kHopnetPort &&
                   udp.GetDestinationPort() == kHopnetPort;
     }
@@ -270,8 +267,8 @@ bool RoutingProtocol::RouteInput(Ptr<const Packet> p, const Ipv4Header& header,
         Process(m_inter->routeData(h, swarm::core::kInvalidAddress), &d, &h);
         return true;
     }
-    // From a neighbour: the payload starts with the DataHeader.
-    const auto lead = ReadDataHeader(p, kConfig.maxPathLength);
+    // From a neighbour: the payload carries the DataHeader.
+    const auto lead = ReadDataHeader(p, header.GetProtocol(), kConfig.maxPathLength);
     if (!lead || lead->header.destination != ToNodeAddress(dst)) {
         NS_LOG_DEBUG("no valid HOPNET data header on a data packet for " << dst);
         return false;
@@ -279,7 +276,12 @@ bool RoutingProtocol::RouteInput(Ptr<const Packet> p, const Ipv4Header& header,
     SwarmPrevHopTag tag;
     const Ipv4Address prev = p->PeekPacketTag(tag) ? tag.Get() : Ipv4Address();
     core::DataHeader h = lead->header;
-    Data d{StripDataHeader(p, lead->size), header, ucb, lcb, ecb, static_cast<uint32_t>(iif)};
+    Data d{StripDataHeader(p, header.GetProtocol(), lead->size),
+           header,
+           ucb,
+           lcb,
+           ecb,
+           static_cast<uint32_t>(iif)};
     Process(m_inter->routeData(h, ToNodeAddress(prev)), &d, &h);
     return true;
 }
@@ -304,10 +306,10 @@ void RoutingProtocol::OnDataUndelivered(Ptr<const Packet> p, const Ipv4Header& h
     // "How a broken link is detected"): the core re-routes it or starts a
     // local repair; a resend goes through ResendData (no stack callbacks here).
     if (!m_inter) return;
-    const auto lead = ReadDataHeader(p, kConfig.maxPathLength);
+    const auto lead = ReadDataHeader(p, header.GetProtocol(), kConfig.maxPathLength);
     if (!lead) return;
     core::DataHeader h = lead->header;
-    Data d{StripDataHeader(p, lead->size), header, {}, {}, {}, 0};
+    Data d{StripDataHeader(p, header.GetProtocol(), lead->size), header, {}, {}, {}, 0};
     Process(m_inter->onDataSendFailure(h, ToNodeAddress(failedNext)), &d, &h);
 }
 
