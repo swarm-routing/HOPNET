@@ -4,7 +4,9 @@
 // The network the inter-zone and local-repair tests run on: a lossless,
 // instantaneous radio over a fixed graph, every node an IntraZone + InterZone
 // pair, the adapter's queue and repair timers included; the Fig. 4.1 fixture;
-// and helpers that build ants by hand.
+// and helpers that build ants by hand. A unicast ant is also overheard by the
+// sender's other neighbours (#5 (s)), and a query-processing delay (#5 (t))
+// ends when the air is quiet, shortest wait first, with the clock unmoved.
 #ifndef HOPNET_CORE_TEST_NET_H
 #define HOPNET_CORE_TEST_NET_H
 
@@ -109,6 +111,8 @@ public:
     std::map<NodeAddress, int> drops;                           // per node, ants and data
     std::map<NodeAddress, std::vector<DataHeader>> queued;      // per node
     std::map<NodeAddress, int> discarded;                       // per node, DiscardPending
+    /// Every query-processing delay drawn: (node, wait).
+    std::vector<std::pair<NodeAddress, Time>> queryWaits;
     /// The ants of `type` sent, in order.
     std::vector<Sent> antsOf(AntType type) const {
         std::vector<Sent> out;
@@ -128,6 +132,11 @@ private:
     struct Timer {
         Time at;
         NodeAddress node, dest;
+    };
+    struct QueryTimer {
+        Time wait;
+        NodeAddress node, source;
+        std::uint32_t seq;
     };
     struct Frame {
         NodeAddress from, to;
@@ -184,6 +193,10 @@ private:
         }
         if (o.repairFor != kInvalidAddress)
             timers_.push_back({clock_.now() + o.repairWait, at, o.repairFor});
+        if (o.querySource != kInvalidAddress) {
+            queryWaits.emplace_back(at, o.queryWait);
+            queryTimers_.push_back({o.queryWait, at, o.querySource, o.querySeq});
+        }
         if (o.routeReady != kInvalidAddress) {  // re-offer what waits for it
             std::vector<DataHeader> waiting;
             std::erase_if(queued[at], [&](const DataHeader& q) {
@@ -196,14 +209,26 @@ private:
         }
     }
     void run() {
-        while (!air_.empty()) {
-            Frame f = air_.front();
-            air_.pop_front();
-            if (f.isData) {
-                emit(f.to, inter(f.to).routeData(f.data, f.from), &f.data);
-            } else {
-                emit(f.to, inter(f.to).onReceive(f.ant, f.from), nullptr);
+        while (true) {
+            while (!air_.empty()) {
+                Frame f = air_.front();
+                air_.pop_front();
+                if (f.isData) {
+                    emit(f.to, inter(f.to).routeData(f.data, f.from), &f.data);
+                } else {
+                    if (f.ant.type == AntType::ExternalForward)  // unicast only
+                        for (NodeAddress n : adj[f.from])        // the sender's other neighbours
+                            if (n != f.to) inter(n).overhear(f.ant);
+                    emit(f.to, inter(f.to).onReceive(f.ant, f.from), nullptr);
+                }
             }
+            if (queryTimers_.empty()) break;
+            const auto next = std::min_element(
+                queryTimers_.begin(), queryTimers_.end(),
+                [](const QueryTimer& a, const QueryTimer& b) { return a.wait < b.wait; });
+            const QueryTimer fire = *next;
+            queryTimers_.erase(next);
+            emit(fire.node, inter(fire.node).onQueryDelay(fire.source, fire.seq), nullptr);
         }
     }
 
@@ -215,6 +240,7 @@ private:
     std::map<NodeAddress, std::unique_ptr<Node>> nodes_;
     std::deque<Frame> air_;
     std::vector<Timer> timers_;
+    std::vector<QueryTimer> queryTimers_;
 };
 
 // [W07] Fig. 4.1 as the pre-registration reads it (#5 (b), (d)), radius 2:

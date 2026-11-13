@@ -100,6 +100,8 @@ void TestDeterminism(Checker& c);
 void TestBordercastFig41(Checker& c);
 void TestBordercastSkipByBestNeighbour(Checker& c);
 void TestQueryDetection(Checker& c);
+void TestQueryOverhearing(Checker& c);
+void TestQueryDelay(Checker& c);
 void TestDiscoveryFig41(Checker& c);
 void TestIntraZoneData(Checker& c);
 void TestDestinationGenerations(Checker& c);
@@ -149,6 +151,8 @@ inline const std::vector<NamedTest>& AllTests() {
         {"bordercast-fig41", TestBordercastFig41},
         {"bordercast-skip-best-neighbour", TestBordercastSkipByBestNeighbour},
         {"query-detection", TestQueryDetection},
+        {"query-overhearing", TestQueryOverhearing},
+        {"query-delay", TestQueryDelay},
         {"discovery-fig41", TestDiscoveryFig41},
         {"intrazone-data", TestIntraZoneData},
         {"destination-generations", TestDestinationGenerations},

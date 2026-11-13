@@ -27,12 +27,18 @@
 //    its destination is stored), Drop (through the stack's error callback);
 //    DiscardPending drops what is held for a destination;
 //  - a local repair's wait: InterZone::onRepairTimeout after repairWait;
+//  - a bordercast's query-processing delay (#5 (t)): InterZone::onQueryDelay
+//    after queryWait;
+//  - promiscuous reception (#5 (s), with Config::queryOverhearing and
+//    queryDetection on): a HOPNET ant in a frame addressed to another node
+//    goes to InterZone::overhear, which only detects; nothing is sent;
 //  - a link failure (WifiLinkMonitor, OnLinkFailure): IntraZone::onLinkFailure;
 //    a data packet the MAC gave back (OnDataUndelivered):
 //    InterZone::onDataSendFailure, its packet resent through ResendData.
 #ifndef HOPNET_ROUTING_PROTOCOL_H
 #define HOPNET_ROUTING_PROTOCOL_H
 
+#include "ns3/net-device.h"
 #include "ns3/nstime.h"
 #include "ns3/swarm-routing-base.h"
 #include "ns3/traced-callback.h"
@@ -72,6 +78,8 @@ public:
 
     /// An ant this node sent: (core::AntType byte, broadcast).
     typedef void (*AntTxCallback)(uint8_t type, bool broadcast);
+    /// An ant this node overheard, addressed to another node (core::AntType byte).
+    typedef void (*AntOverheardCallback)(uint8_t type);
 
     // Ipv4RoutingProtocol: every unicast data packet passes through here.
     bool RouteInput(Ptr<const Packet> p, const Ipv4Header& header, Ptr<const NetDevice> idev,
@@ -110,6 +118,9 @@ private:
     };
 
     void InternalAntTick();
+    /// Promiscuous receive handler (#5 (s)): frames addressed to other nodes.
+    void Overhear(Ptr<NetDevice> device, Ptr<const Packet> frame, uint16_t protocol,
+                  const Address& from, const Address& to, NetDevice::PacketType type);
     /// Carries out `o`. With `data`, the data decisions are about that packet
     /// and `header` is its DataHeader as the call left it.
     void Process(const core::Outcome& o, Data* data, core::DataHeader* header);
@@ -125,6 +136,7 @@ private:
     std::unique_ptr<core::InterZone> m_inter;
     std::deque<Held> m_waiting;
     TracedCallback<uint8_t, bool> m_antTx;
+    TracedCallback<uint8_t> m_antOverheard;
 };
 
 }  // namespace hopnet

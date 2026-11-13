@@ -102,6 +102,10 @@ public:
     /// counts, the inter-zone ones too; fidelity, neighbour discovery row).
     void heard(NodeAddress neighbour);
 
+    /// The node's injected randomness, shared with the inter-zone half (the
+    /// query-processing delay, #5 (t)).
+    IRng& rng() { return rng_; }
+
 private:
     Decision onInternalForward(const Ant& ant, NodeAddress from);
     Decision onInternalBackward(const Ant& ant, NodeAddress from);

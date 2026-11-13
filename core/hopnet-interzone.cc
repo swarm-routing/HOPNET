@@ -197,15 +197,18 @@ std::vector<Decision> InterZone::discoverInner(NodeAddress dest) {
     return out;
 }
 
-std::vector<Decision> InterZone::bordercast(const Ant& ant, NodeAddress from) {
+std::vector<Decision> InterZone::bordercast(const Ant& ant, NodeAddress from,
+                                            const std::set<NodeAddress>* skip) {
     // [W07] p. 27-28 with the query control of #5 (b): from the neighbour c
     // the ant came from (none at the source), skip a peripheral node p that is
     // on Path or whose best IntraRT neighbour is c (ties: the lowest id), and
-    // never send through c.
+    // never send through c. #5 (t): also skip a peripheral node seen on the
+    // Path of a copy of the query during the query-processing delay.
     std::vector<Decision> out;
     const auto& table = intra_.table();
     for (NodeAddress p : table.peripheral(config_.zoneRadius)) {
         if (p == ant.source || ant.path.contains(p)) continue;
+        if (skip && skip->count(p)) continue;
         if (from != kInvalidAddress) {
             NodeAddress best = kInvalidAddress;
             double bestValue = 0.0;
@@ -268,8 +271,9 @@ Outcome InterZone::onExternalForward(const Ant& ant, NodeAddress from) {
         // zone, [W07] p. 27) or following a cached InterRT route (#5 (h)) is
         // not a bordercast and always goes on (BRP: a node that knows the
         // route forwards the query to the destination).
-        const bool directed = ant.target == ant.destination || indexOf(ant.path, ant.target) >= 0;
-        if (!directed && !detect(ant, previousBordercaster(ant))) return one(Decision::drop());
+        const bool fresh = directed(ant) || detect(ant, previousBordercaster(ant));
+        learn(ant, !fresh);  // a bordercast waiting here is covered (#5 (t))
+        if (!fresh) return one(Decision::drop());
         return one(relay(ant, false));
     }
     return atBordercaster(ant, from);
@@ -283,6 +287,9 @@ Outcome InterZone::atBordercaster(const Ant& ant, NodeAddress from) {
     // node is its bordercaster; a node that detected the query from another
     // bordercaster is covered and does not bordercast it (below).
     const bool covered = !detect(ant, from == kInvalidAddress ? self : previousBordercaster(ant));
+    // An addressed copy covers the zone of the bordercaster it came from, not
+    // this node's (BRP §4): a bordercast waiting here learns its Path only.
+    learn(ant, false);
     if (at >= 0) {  // a node of a cached InterRT route the ant follows (below)
         Ant next = ant;
         next.target = static_cast<std::size_t>(at) + 1 < ant.path.size()
@@ -321,7 +328,63 @@ Outcome InterZone::atBordercaster(const Ant& ant, NodeAddress from) {
         }
     }
     if (covered) return one(Decision::drop());  // its zone is covered (#5 (q))
+    // #5 (t): a bordercaster the copy was addressed to waits U[0, J) first;
+    // the query's origin (from = none) never waits. Full: no wait (org rule 7).
+    if (config_.queryProcessingDelay > 0.0 && from != kInvalidAddress &&
+        pending_.size() < config_.historyCapacity) {
+        const double draw = intra_.rng().uniform();  // a named local (org rule 5)
+        pending_.emplace(std::pair{ant.source, ant.seq}, Pending{ant, from, false, {}});
+        Outcome out;
+        out.querySource = ant.source;
+        out.querySeq = ant.seq;
+        out.queryWait = draw * config_.queryProcessingDelay;
+        return out;
+    }
     return Outcome{bordercast(ant, from), kInvalidAddress};
+}
+
+Outcome InterZone::onQueryDelay(NodeAddress source, std::uint32_t seq) {
+    const auto it = pending_.find({source, seq});
+    if (it == pending_.end()) return {};
+    const Pending p = std::move(it->second);
+    pending_.erase(it);
+    if (p.covered) return observed(one(Decision::drop()), kInvalidAddress, false);  // BRP §4
+    return observed(Outcome{bordercast(p.ant, p.from, &p.seen), kInvalidAddress}, kInvalidAddress,
+                    false);
+}
+
+void InterZone::overhear(const Ant& ant) {
+    // #5 (s), ZRP's QD2: a node in range of a relaying node detects the query
+    // as the relay does (#5 (q)). Validated as onExternalForward validates.
+    if (!config_.queryDetection || !config_.queryOverhearing) return;
+    if (ant.type != AntType::ExternalForward || ant.source == kInvalidAddress ||
+        ant.destination == kInvalidAddress || ant.source == ant.destination ||
+        ant.target == kInvalidAddress || ant.path.empty() ||
+        ant.path.hops().front().node != ant.source || !positiveFinite(ant.time)) {
+        return;
+    }
+    const NodeAddress self = intra_.self();
+    if (self == ant.source || self == ant.destination) return;
+    if (directed(ant)) {
+        learn(ant, false);
+        return;
+    }
+    learn(ant, !detect(ant, previousBordercaster(ant)));
+}
+
+bool InterZone::directed(const Ant& ant) {
+    return ant.target == ant.destination || indexOf(ant.path, ant.target) >= 0;
+}
+
+void InterZone::learn(const Ant& ant, bool zoneCovered) {
+    if (!config_.queryDetection) return;
+    const auto it = pending_.find({ant.source, ant.seq});
+    if (it == pending_.end()) return;
+    if (zoneCovered) it->second.covered = true;
+    for (const auto& h : ant.path.hops()) {
+        if (it->second.seen.size() >= config_.maxPathLength) break;  // bounded (org rule 7)
+        it->second.seen.insert(h.node);
+    }
 }
 
 Outcome InterZone::atDestination(const Ant& ant) {

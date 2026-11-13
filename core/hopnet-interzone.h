@@ -20,10 +20,15 @@
 // gets an error ant (type 4) instead. Both travel back over the source's own
 // prefix, and the nodes they pass remove their invalid InterRT routes (k).
 //
+// Query control on route discovery follows (b), then ZRP's (q) detection and
+// early termination, (s) detection by overhearing (the adapter hands overheard
+// ants to overhear()) and (t) the random query-processing delay before a
+// bordercast (onQueryDelay() ends it); maintainer decisions of 2026-11-13.
+//
 // The core is pure (HOPNET golden rule 10): the adapter calls these for every
 // data packet and ant, carries out the decisions in order, and owns the queue
 // of packets waiting for a route (Config::repairBufferCapacity packets, each
-// at most Config::repairBufferTimeout) and the repair timer. A Unicast
+// at most Config::repairBufferTimeout), the repair timer and the query timer. A Unicast
 // decision with no message sends the data packet, its header as the call
 // left it.
 //
@@ -48,6 +53,7 @@
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -64,6 +70,11 @@ struct Outcome {
     /// onRepairTimeout(repairFor) after repairWait seconds.
     NodeAddress repairFor = kInvalidAddress;
     Time repairWait = 0.0;
+    /// A bordercast waits (#5 (t)): call onQueryDelay(querySource, querySeq)
+    /// after queryWait seconds.
+    NodeAddress querySource = kInvalidAddress;
+    std::uint32_t querySeq = 0;
+    Time queryWait = 0.0;
 };
 
 /// A source's route prefix <S ... M> joined to a repaired route <M ... D>,
@@ -122,6 +133,20 @@ public:
     /// or its wait is not over (a timer from an earlier repair).
     Outcome onRepairTimeout(NodeAddress dest);
 
+    /// An ant this node overheard, addressed to another node (the adapter's
+    /// promiscuous reception, #5 (s)): an external forward ant's query is
+    /// detected as at a transit relay (a directed copy is not), and a
+    /// bordercast waiting here learns from it (#5 (t)). Never sends, never
+    /// forwards, never touches a table; nothing with Config::queryOverhearing
+    /// or Config::queryDetection off. Not reported to the observer.
+    void overhear(const Ant& ant);
+
+    /// The query-processing delay of (source, seq) is over (#5 (t)): the
+    /// waiting bordercast goes out, without the peripheral nodes learned in
+    /// the wait, or the ant dies if this node's zone was covered meanwhile.
+    /// Nothing when no bordercast waits for it.
+    Outcome onQueryDelay(NodeAddress source, std::uint32_t seq);
+
     /// A local repair toward `dest` is running here.
     bool repairing(NodeAddress dest) const { return repairs_.count(dest) > 0; }
 
@@ -162,13 +187,23 @@ private:
     Outcome onExternalBackward(const Ant& ant, NodeAddress from);
     Outcome atDestination(const Ant& ant);
     Outcome atBordercaster(const Ant& ant, NodeAddress from);
-    std::vector<Decision> bordercast(const Ant& ant, NodeAddress from);
+    /// `skip`: peripheral nodes known to have bordercast the query (#5 (t)).
+    std::vector<Decision> bordercast(const Ant& ant, NodeAddress from,
+                                     const std::set<NodeAddress>* skip = nullptr);
     bool acceptGeneration(NodeAddress source, std::uint32_t seq);
     /// Query detection (#5 (q)): records the query of `ant` as sent by the
     /// bordercaster `prev`, the first time; false when it was detected before
     /// from another bordercaster (this node's zone is covered). Always true
     /// with Config::queryDetection off.
     bool detect(const Ant& ant, NodeAddress prev);
+    /// A copy of a query this node handled or overheard (#5 (t)): a bordercast
+    /// waiting for that query learns the copy's Path nodes, and that this
+    /// node's zone is covered when `zoneCovered`. Nothing with
+    /// Config::queryDetection off.
+    void learn(const Ant& ant, bool zoneCovered);
+    /// A copy is directed, not bordercast: sent to the destination itself, or
+    /// following a cached InterRT route (its target on Path).
+    static bool directed(const Ant& ant);
     /// The ant forwarded one hop toward its target by the selection rule,
     /// never through `exclude`; `appendSelf` adds this node to Path (a
     /// bordercaster). Unicast, or Drop with no next hop ([W07] p. 34), a full
@@ -208,6 +243,15 @@ private:
     std::deque<NodeAddress> acceptedOrder_;          // FIFO eviction, historyCapacity
     std::map<NodeAddress, Time> discoveries_;        // last discovery per destination
     std::map<NodeAddress, Repair> repairs_;          // per destination, interRtCapacity
+    /// A bordercast waiting out its query-processing delay (#5 (t)).
+    struct Pending {
+        Ant ant;                             // the copy addressed here
+        NodeAddress from = kInvalidAddress;  // the neighbour it came from
+        bool covered = false;                // detected from another bordercaster since
+        std::set<NodeAddress> seen;          // Path nodes of copies since; maxPathLength
+    };
+    /// Per (source, seq); at most historyCapacity (org rule 7).
+    std::map<std::pair<NodeAddress, std::uint32_t>, Pending> pending_;
 };
 
 }  // namespace hopnet::core

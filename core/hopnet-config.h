@@ -102,6 +102,24 @@ struct Config {
     /// false = (b) alone, for an A/B against it.
     bool queryDetection = true;
 
+    /// Query detection by overhearing, ZRP's QD2 (#5 (s), maintainer decision
+    /// 2026-11-13): an external forward ant this node overhears, addressed to
+    /// another node, is detected as a transit relay detects it under
+    /// queryDetection; a directed copy is not. Acts only with queryDetection
+    /// on. false = detection by relaying only (QD1, #5 (q)).
+    bool queryOverhearing = true;
+
+    /// The random query-processing delay before a bordercast (#5 (t),
+    /// maintainer decision 2026-11-13; BRP's RELAY_JITTER): a bordercaster
+    /// that received a copy addressed to it, found no route and is not
+    /// covered waits U[0, queryProcessingDelay) seconds, drawn from the IRng,
+    /// before it bordercasts. In the wait, a copy detected from another
+    /// bordercaster (relayed or overheard) cancels the bordercast, and the
+    /// Path nodes of every copy it handles or overhears are skipped as
+    /// peripheral nodes (with queryDetection on). Fidelity "Query-processing
+    /// delay": 0.1 s, repo choice. 0 = bordercast at once.
+    Time queryProcessingDelay = 0.1;
+
     /// Inter-zone data (a packet with a route) that finds no neighbour with
     /// pheromone toward its next Path node is handled as a data transmission
     /// that failed with no other neighbour (#5 (e)): at the source its record
