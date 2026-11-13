@@ -5,8 +5,8 @@ name: Core
 # core/ on its own (no ns-3 tree): the org's strict warnings as errors, the
 # unit tests under ctest, the same under ASan + UBSan, and clang-format with the
 # org style. swarm-core's primitives come from the commit core/CMakeLists.txt
-# pins (SWARM_CORE_REF). The ns-3 module joins reusable-ns3-ci.yml once ns3/
-# exists. Check names (stable, for required_checks): core-test, core-format.
+# pins (SWARM_CORE_REF). The ns-3 module (ns3/) runs in ns3.yml, on
+# reusable-ns3-ci.yml. Check names (stable, for required_checks): core-test, core-format.
 on:
   push:
     branches: [main]

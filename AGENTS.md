@@ -7,7 +7,7 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11. The ns-3 module `hopnet` carries them out on swarm-core's `SwarmRoutingBase` (#5; it waited until ARA's built green against swarm-core, maintainer decision 2026-11-10, #3, met on ARA's `main`); the gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet, #28) are not run yet.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
+**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11. The ns-3 module `hopnet` carries them out on swarm-core's `SwarmRoutingBase` (#5; it waited until ARA's built green against swarm-core, maintainer decision 2026-11-10, #3, met on ARA's `main`); the gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet, #28) are not run yet.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
@@ -16,6 +16,7 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             hopnet-config.h (parameters, each citing its fidelity row), hopnet-ant (the ant header + wire codec),
             hopnet-intrazone-table (IntraRT), hopnet-intrazone (internal ants, eqs. 4.1-4.3, neighbours, selection),
             hopnet-interzone-table (InterRT), hopnet-interzone (bordercasting, external ants, data routing),
+            hopnet-repair.cc (§4.3's local repair: the InterZone members for repair, notification and error ants),
             hopnet-data (the data header + wire codec), hopnet-observe.h (what the core reports to swarm-core's
             `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
             test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: SWARM_CORE_REF in core/CMakeLists.txt)
@@ -370,7 +371,7 @@ because the issue threads were thorough. Caveman the chat, not the record.
 | Know which release a piece of work serves, or why something is not planned | [`docs/roadmap.md`](docs/roadmap.md) (the release ladder; issues carry `release:` labels) |
 | The plan | swarm-routing/.github#52, org ROADMAP "Protocol repositories" |
 | The source | Wang, *HOPNET* (2007 thesis), [UManitoba MSpace](https://mspace.lib.umanitoba.ca/bitstream/1993/20935/1/Wang_HOPNET_a.pdf); AntHocNet `docs/research-landscape-2026.md` (Other swarm protocols) |
-| Shared primitives | `swarm-routing/ns3-swarm-core`; `core/` fetches its `core/` at `SWARM_CORE_REF` (`core/CMakeLists.txt`); bump it together with `core-deps` in `.github/workflows/licence.yml` and `SWARM_CORE_REF` in the `Makefile` |
+| Shared primitives | `swarm-routing/ns3-swarm-core`; `core/` fetches its `core/` at `SWARM_CORE_REF` (`core/CMakeLists.txt`); bump the pin in all four places together: `SWARM_CORE_REF` in `core/CMakeLists.txt` and in the `Makefile`, and `core-deps` in `.github/workflows/licence.yml` and `.github/workflows/ns3.yml`; the `swarm-core / pin` check (`swarm-core-pin.yml`) fails when they name different SHAs or when swarm-core main's `core/` is no longer the pinned one |
 | The core's readings and parameters | `docs/fidelity.md`, the accepted pre-registration on #5, `core/hopnet-config.h` |
 | Benchmark against AntHocNet, ARA, AODV, OLSR | `swarm-routing/ns3-tools` arenas, results into `swarm-routing/benchmarks` |
 | Record an architecture decision | [`docs/adr/`](docs/adr/) (`0000-template.md`) |

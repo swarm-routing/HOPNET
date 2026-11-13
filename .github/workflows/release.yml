@@ -8,7 +8,7 @@ name: Release
 #   dispatch `bump`     open the PR `chore(release): bump version A to B`
 #                       from bot/release (Commitizen, .cz.toml);
 #   merge that PR       the release: `make dist` builds hopnet-<ver>.tar.gz
-#                       (core/ with its LICENSE, docs/ (and ns3/ once it exists)), then SBOM, checksums, signed provenance,
+#                       (core/ with its LICENSE, ns3/, docs/), then SBOM, checksums, signed provenance,
 #                       the v<ver> tag and the GitHub release, whose notes are
 #                       the version's CHANGELOG.md section (.cz-changelog.md.j2
 #                       adds the release status: v0.1.0 has not cleared the gates).
