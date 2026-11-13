@@ -1,0 +1,66 @@
+# Copyright (c) 2026 Daniel Joppi (https://github.com/swarm-routing)
+# SPDX-License-Identifier: GPL-2.0-only
+name: ns-3
+
+# The `hopnet` contrib module (ns3/, which compiles core/ as well) in
+# ghcr.io/swarm-routing/ns3-dev (debug and sanitized, the release ns-3
+# supports), on swarm-core `main` (swarm-core golden rule 12: protocols build
+# against main), with the org quality gates: strict warnings, coverage
+# (report-only, to Codecov), determinism, clang-format and licence headers.
+# SonarQube Cloud stays off until the repository has a project there
+# (org-sync.toml `sonar = false`, swarm-routing/.github#104). routing-bench
+# (swarm-routing/ns3-tools) is built beside it so the harness arm
+# (ns3/helper/hopnet-bench-arms.cc) compiles and runs.
+#
+# core/ also builds alone against swarm-core at SWARM_CORE_REF (core.yml). The
+# `swarm-core / pin` check (swarm-core-pin.yml) keeps the two in step: it fails
+# when swarm-core main's core/ differs from the pinned commit's, so a change
+# there is met by a pin bump here (core/CMakeLists.txt, Makefile, licence.yml
+# and the core-deps below, all one SHA, which it also checks).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:  # its checks are required, so the merge queue runs them too (swarm-routing/.github#130)
+  workflow_dispatch:
+    inputs:
+      ns3-versions:
+        description: 'On demand: JSON list of older ns-3 releases (3.42+), e.g. ["3.48"]'
+        default: ''
+      profiles:
+        description: 'On demand: JSON list of image profiles. Older releases have a debug image; a sanitized one only where it was built on request (e.g. 3.48)'
+        default: '["debug"]'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  ci:
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@main
+    with:
+      modules: hopnet=ns3
+      dependencies: |
+        swarm-core=swarm-routing/ns3-swarm-core@main
+        routing-bench=swarm-routing/ns3-tools@main:ns3/routing-bench
+      ns3-versions: ${{ inputs.ns3-versions || '["latest"]' }}
+      profiles: ${{ inputs.ns3-versions != '' && inputs.profiles || '["debug", "sanitized"]' }}
+      # Older images may predate these options: automatic `latest` legs only.
+      strict-warnings: ${{ inputs.ns3-versions == '' }}
+      coverage: ${{ inputs.ns3-versions == '' }}
+      sonar: false
+      # The delivery smoke through the harness, as ns3-tools runs its stock arms.
+      run: routing-compare --scenario=paper --nNodes=20 --time=30 --runs=1 --protocols=hopnet
+      determinism: hopnet-example --seed={seed}
+      dual-roots: 'core/'
+      core-roots: 'core/'
+      core-deps: swarm-routing/ns3-swarm-core@3ced81506bd906163dc83f5825d77ca170609dfb:core
+
+  # The coverage report of the `ci` job to Codecov (report-only; GitHub OIDC).
+  codecov:
+    needs: ci
+    if: inputs.ns3-versions == ''
+    permissions:
+      contents: read
+      id-token: write
+    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@main

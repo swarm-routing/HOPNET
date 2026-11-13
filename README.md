@@ -11,12 +11,13 @@
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue?logo=cplusplus)](AGENTS.md)
 [![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org)
 [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev)
+[![codecov](https://codecov.io/gh/swarm-routing/HOPNET/graph/badge.svg)](https://codecov.io/gh/swarm-routing/HOPNET)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/HOPNET?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2FHOPNET&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 <!-- org-sync:end badges -->
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
 
-**Status: `core/` in progress** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery) and the inter-zone half's route discovery and data forwarding (bordercasting, InterRT) are written and tested; the local repair and the ns-3 module are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
+**Status: `core/` written, ns-3 module in** ([#5](https://github.com/swarm-routing/HOPNET/issues/5)): the intra-zone half (internal ants, IntraRT, neighbour discovery), the inter-zone half (bordercasting, InterRT, data forwarding) and §4.3's local repair are written and tested, and the ns-3 module `hopnet` carries them out on swarm-core; the comparator gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet) are next. Every reading follows the [fidelity sheet](docs/fidelity.md). See [AGENTS.md](AGENTS.md) for the plan.
 
 **Release status:** the first release, v0.1.0, comes before the comparator gates (maintainer decision 2026-11-10): it has **not** cleared them (org golden rule 6: fidelity sheet, per-PR delivery smoke, anchor). It ships `core/` and `docs/`; the ns-3 module `hopnet` and the anchor are pending, so no number from v0.1.0 counts as a benchmark result. The gated release is proposed as v0.2.0; the ladder is in [docs/roadmap.md](docs/roadmap.md). Releases are cut by [`release.yml`](https://github.com/swarm-routing/HOPNET/blob/main/.github/workflows/release.yml) and listed under [Releases](https://github.com/swarm-routing/HOPNET/releases).
 

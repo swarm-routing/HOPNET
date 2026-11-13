@@ -12,7 +12,10 @@ discovery and loss, selection inside the zone), then the inter-zone half
 bordercasting and its query control, the destination's generation check, the
 external backward ant, the InterRT, data inside and between zones), then
 §4.3's local repair (`core/hopnet-repair.cc`: the repair ant, the buffer and
-the wait, notification and error ants). The ns-3 module is next. The **Implementation** column
+the wait, notification and error ants), then the ns-3 module (`ns3/`, contrib
+module `hopnet`), which carries the core's decisions out on swarm-core's
+`SwarmRoutingBase`; its two plumbing choices are the Parameters rows "First internal ant" and
+"Control port". The **Implementation** column
 records what the fresh implementation does or is to do, and **Status** says
 how it stands against the thesis. Section, equation and figure numbers are the thesis's; **page numbers
 for [W07] are the thesis's printed page numbers** (the PDF page is the printed
@@ -128,6 +131,8 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | InterRT capacity (destinations) | 4096 | repo choice: a bound only (org rule 7), the size of the duplicate history; a node holds records only for destinations it sends to or repairs toward (#5 (d)), 20 flows in the anchor. A full table drops its expired records, then refuses a new destination | [W07] gives no size |
 | Hops an external ant or a data packet may travel | 100, the Path cap | repo choice, accepted by the maintainer on 2026-11-10 ([#5](https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6779349702) (g)): AntHocNet's `Config::maxPathLength` bounds every hop its ants make, and the Path cap row already took that constant; no new one | Sheet review point 2 below. Counted in the `travelled` field; a node does not forward a packet or ant that has made 100 hops |
 | IntraRT capacity (cells, neighbour × zone node) | 4096 | repo choice: a bound only (org rule 7), the size of the duplicate history; the anchor's densest point (about 19 neighbours in range, 2-hop zones of about 60 nodes) needs about 1100 cells. A new cell in a full table is refused | [W07] gives no size |
+| First internal ant | at U[0, internal ant period) after the start, drawn per node from its seeded stream; every period after that | repo choice: ns-3 plumbing, not protocol behaviour: nodes started at once would broadcast their internal ants in the same instant every period; one draw from the node's seeded stream (org rule 5) spreads them, and the period stays 1 s (row above) | [W07] p. 24 says only "periodically" |
+| Control port | UDP 5545, one-hop datagrams | repo choice: ns-3 plumbing; one port per arm, after AntHocNet's adaptive arms (5541–5544), so the harness counts HOPNET's ants as routing control | [W07] names no transport; the data header rides in front of each data packet's transport header (Mechanisms, "Data to a destination outside the zone") |
 | Simulator | GloMoSim (on PARSEC) | [W07] §5.1 | Version not stated; HOPNET implemented at the network layer |
 | AODV base scenario: nodes, area | 50, 3000 m × 1000 m | [W07] §5.2 | Varied 10–190 nodes in Fig. 5.1–5.3 (area for those not restated) |
 | AODV base scenario: mobility | random waypoint, speed U[0, 10] m/s | [W07] §5.2 | Pause time not stated for the base scenario |
