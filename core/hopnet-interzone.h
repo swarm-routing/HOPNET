@@ -48,6 +48,7 @@
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <utility>
 #include <vector>
 
 namespace hopnet::core {
@@ -163,6 +164,11 @@ private:
     Outcome atBordercaster(const Ant& ant, NodeAddress from);
     std::vector<Decision> bordercast(const Ant& ant, NodeAddress from);
     bool acceptGeneration(NodeAddress source, std::uint32_t seq);
+    /// Query detection (#5 (q)): records the query of `ant` as sent by the
+    /// bordercaster `prev`, the first time; false when it was detected before
+    /// from another bordercaster (this node's zone is covered). Always true
+    /// with Config::queryDetection off.
+    bool detect(const Ant& ant, NodeAddress prev);
     /// The ant forwarded one hop toward its target by the selection rule,
     /// never through `exclude`; `appendSelf` adds this node to Path (a
     /// bordercaster). Unicast, or Drop with no next hop ([W07] p. 34), a full
@@ -193,7 +199,11 @@ private:
     const IClock& clock_;
     swarm::core::IRouterObserver* observer_;
     InterZoneTable table_;
-    swarm::core::DedupHistory bordercast_;           // external forward ants seen as a bordercaster
+    swarm::core::DedupHistory bordercast_;  // external forward ants seen as a bordercaster
+    /// Query detection (#5 (q)): per (source, seq), the bordercaster the first
+    /// copy came from; historyCapacity queries, oldest first (org rule 7).
+    std::map<std::pair<NodeAddress, std::uint32_t>, NodeAddress> detected_;
+    std::deque<std::pair<NodeAddress, std::uint32_t>> detectedOrder_;
     std::map<NodeAddress, std::uint32_t> accepted_;  // per source, as a destination
     std::deque<NodeAddress> acceptedOrder_;          // FIFO eviction, historyCapacity
     std::map<NodeAddress, Time> discoveries_;        // last discovery per destination
