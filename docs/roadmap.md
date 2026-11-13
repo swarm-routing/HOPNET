@@ -55,8 +55,8 @@ repositories use the cross-repo form.
 ```mermaid
 flowchart TB
     subgraph HOP["HOPNET"]
-        H5["<b>#5</b> core rest (local repair)<br/>+ ns-3 module"]
-        H40["#40 observer adoption"]
+        H5["<b>#5</b> local repair + ns-3 module<br/>(done, #85); its anchor is open"]
+        H40["#40 observer adoption<br/>(done)"]
         H28["#28 benchmark pipeline"]
         ANCHOR["anchor vs AntHocNet<br/>or written infeasibility verdict"]
         V02["<b>v0.2.0</b>"]
@@ -67,7 +67,7 @@ flowchart TB
     end
     ARA["ARA v0.2.0<br/>(its ns3/ builds green on swarm-core)"]
     TERM["Termite v0.2.0"]
-    TOOLS["ns3-tools v0.2.0<br/>(ns3-tools#81 campaigns)"]
+    TOOLS["ns3-tools v0.2.0<br/>(swarm-routing/ns3-tools#81 campaigns, done)"]
     CORE["ns3-swarm-core v0.2.0"]
     AHN["AntHocNet<br/>(the anchor's base)"]
 
@@ -86,10 +86,12 @@ flowchart TB
     style V03 fill:#fff8e6,stroke:#c48f00,stroke-dasharray:4 3
 ```
 
-The ns-3 module waits until ARA's builds green against swarm-core
-(maintainer decision 2026-11-10, #3). The pipeline needs `ns3-campaign`
-(ns3-tools#81, open), and the anchor pairs HOPNET with AntHocNet through
-ns3-tools.
+Done: §4.3's local repair and the ns-3 module (#85; it waited until ARA's
+built green against swarm-core, maintainer decision 2026-11-10, #3), the
+observer adoption (#40), and `ns3-campaign`, which the pipeline needs
+(swarm-routing/ns3-tools#81, closed). What still blocks v0.2.0: the
+benchmark pipeline (#28) and the anchor, the open criterion of #5, which
+pairs HOPNET with AntHocNet through ns3-tools.
 
 ## What each release must show to ship
 

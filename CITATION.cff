@@ -10,8 +10,8 @@ title: "HOPNET"
 abstract: >-
   HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs:
   ant-colony routing over routing zones, proactive inside a zone and reactive
-  between zones. Planned as a simulator-agnostic C++ core and an ns-3 contrib
-  module on swarm-core.
+  between zones. A simulator-agnostic C++ core and an ns-3 contrib module on
+  swarm-core.
 type: software
 authors:
   - family-names: Joppi

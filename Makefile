@@ -74,7 +74,7 @@ core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
 # The release asset for swarm-routing/.github's reusable-release.yml, which sets
 # RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
 # only tracked files, deterministically: hopnet-<ver>/ with
-# core/ with its LICENSE, docs/ (and ns3/ once it exists),
+# core/ with its LICENSE, ns3/, docs/,
 # the licence files, README.md, AGENTS.md, the Makefile and CHANGELOG.md (once
 # the first bump writes it).
 RELEASE_VERSION ?= $(shell sed -n 's/^version = "\(.*\)"$$/\1/p' .cz.toml)
