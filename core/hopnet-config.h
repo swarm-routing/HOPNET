@@ -95,8 +95,10 @@ struct Config {
     /// control"), plus, when true, ZRP's query detection and early
     /// termination (#5 (q), maintainer decision 2026-11-13): every node that
     /// handles an external forward ant records its query with the bordercaster
-    /// the first copy came from; a transit relay drops a copy from another
-    /// bordercaster, and a peripheral node so covered does not bordercast.
+    /// the first copy came from; a transit relay drops a bordercast copy from
+    /// another bordercaster (a copy directed at the destination or following
+    /// a cached InterRT route always passes), and a peripheral node so covered
+    /// does not bordercast.
     /// false = (b) alone, for an A/B against it.
     bool queryDetection = true;
 
