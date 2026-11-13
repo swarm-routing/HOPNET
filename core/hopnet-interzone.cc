@@ -95,8 +95,18 @@ Outcome InterZone::routeDataInner(DataHeader& header, NodeAddress from) {
             header.route = r->path;
             header.target = r->path[1];
             Decision d = sendData(header);
-            if (d.action == RouteAction::Unicast) table_.use(header.destination, now);  // #5
-            return one(std::move(d));
+            if (d.action == RouteAction::Unicast) {
+                table_.use(header.destination, now);  // #5
+                return one(std::move(d));
+            }
+            if (!config_.noPheromoneIsLinkFailure) return one(std::move(d));  // [W07] p. 34
+            // #5 (r): no pheromone toward the next Path node is a broken link;
+            // at the source the repair is its own discovery (#5 (i)).
+            table_.erase(header.destination);
+            Outcome out;
+            out.decisions = discoverInner(header.destination);
+            out.decisions.push_back(Decision::queue(header.destination));
+            return out;
         }
         Outcome out;
         out.decisions = discoverInner(header.destination);

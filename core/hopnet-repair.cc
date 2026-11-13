@@ -113,6 +113,9 @@ Outcome InterZone::forward(DataHeader& header) {
             buffer(it->second, header);
             return one(Decision::queue(dest));
         }
+        // #5 (r): no pheromone toward the next Path node is a broken link,
+        // repaired here as after a failed transmission (#5 (e), (i), (m)).
+        if (config_.noPheromoneIsLinkFailure) return startRepair(header);
     }
     return one(std::move(d));
 }

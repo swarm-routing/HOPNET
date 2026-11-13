@@ -100,6 +100,14 @@ struct Config {
     /// false = (b) alone, for an A/B against it.
     bool queryDetection = true;
 
+    /// Inter-zone data (a packet with a route) that finds no neighbour with
+    /// pheromone toward its next Path node is handled as a data transmission
+    /// that failed with no other neighbour (#5 (e)): at the source its record
+    /// goes and a discovery starts; elsewhere a local repair starts (#5 (i),
+    /// (m)). #5 (r), maintainer decision 2026-11-13; false = the drop of
+    /// [W07] p. 34 (fidelity "A data packet is dropped..."), for an A/B.
+    bool noPheromoneIsLinkFailure = true;
+
     /// Hops an external ant or a data packet may travel in all, bordercasters
     /// and transit relays alike: the Path cap's 100, which is what AntHocNet's
     /// maxPathLength bounds (every hop). Fidelity "Hops an external ant or a
