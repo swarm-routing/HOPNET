@@ -29,6 +29,7 @@
 #include "ns3/inet-socket-address.h"
 #include "ns3/internet-stack-helper.h"
 #include "ns3/ipv4-address-helper.h"
+#include "ns3/ipv4-l3-protocol.h"
 #include "ns3/mobility-helper.h"
 #include "ns3/simulator.h"
 #include "ns3/socket.h"
@@ -256,6 +257,10 @@ NetDeviceContainer LineOfWifiNodes(NodeContainer& nodes) {
 /// What one chain run observed.
 struct ChainRun {
     std::vector<std::string> trace;  ///< ant sends and data receptions, in order
+    /// Every IP packet the nodes sent, its bytes (IP header, ant or DataHeader,
+    /// transport, payload) folded in order into one FNV-1a digest.
+    uint64_t txDigest = 0xcbf29ce484222325ull;
+    uint64_t txPackets = 0;
     uint32_t sent = 0;
     uint32_t received = 0;
     std::map<int, uint64_t> ants;  ///< sent, by core::AntType byte
@@ -298,6 +303,10 @@ public:
         for (uint32_t i = 0; i < 4; ++i) {
             Proto(nodes.Get(i))
                 ->TraceConnect("AntTx", std::to_string(i), MakeCallback(&Chain::AntTx, this));
+        }
+        for (uint32_t i = 0; i < 4; ++i) {
+            nodes.Get(i)->GetObject<Ipv4L3Protocol>()->TraceConnect(
+                "Tx", std::to_string(i), MakeCallback(&Chain::IpTx, this));
         }
         if (observe) {
             for (uint32_t i = 0; i < 4; ++i) {
@@ -343,6 +352,14 @@ private:
         os << Simulator::Now().GetNanoSeconds() << " n" << node << " tx type=" << int{type}
            << (broadcast ? " bcast" : " ucast");
         m_run.trace.push_back(os.str());
+    }
+    void IpTx(std::string node, Ptr<const Packet> p, Ptr<Ipv4>, uint32_t) {
+        ++m_run.txPackets;
+        auto fold = [this](uint8_t b) { m_run.txDigest = (m_run.txDigest ^ b) * 0x100000001b3ull; };
+        for (char ch : node)
+            fold(static_cast<uint8_t>(ch));
+        for (uint8_t b : Bytes(p))
+            fold(b);
     }
     void ControlTx(uint8_t, bool, uint32_t) { ++m_run.ctlTx; }
     void ControlRx(uint8_t, uint32_t) { ++m_run.ctlRx; }
@@ -409,6 +426,7 @@ private:
         const ChainRun c = Chain().Run(2, 10);
         NS_TEST_ASSERT_MSG_GT(a.trace.size(), 0u, "something happened");
         NS_TEST_EXPECT_MSG_EQ((a.trace == b.trace), true, "seed 1 twice: identical");
+        NS_TEST_EXPECT_MSG_EQ(a.txDigest, b.txDigest, "seed 1 twice: every packet byte-identical");
         // The first internal ant of each node and the roulette are drawn from
         // the seeded stream, so another seed gives another trace.
         NS_TEST_EXPECT_MSG_EQ((a.trace != c.trace), true, "seed 2: a different trace");
@@ -426,7 +444,12 @@ private:
         ChainRun seen = Chain().Run(1, 20, true);
         NS_TEST_ASSERT_MSG_GT(plain.trace.size(), 0u, "something happened");
         NS_TEST_EXPECT_MSG_EQ((seen.trace == plain.trace), true,
-                              "same seed: byte-identical with the trace sources connected");
+                              "same seed: the same ant and delivery trace");
+        NS_TEST_EXPECT_MSG_GT(plain.txPackets, 0u, "packets on the air");
+        NS_TEST_EXPECT_MSG_EQ(seen.txPackets, plain.txPackets, "the same packets sent");
+        NS_TEST_EXPECT_MSG_EQ(seen.txDigest, plain.txDigest,
+                              "same seed: every packet byte-identical with the trace sources "
+                              "connected");
         NS_TEST_EXPECT_MSG_EQ(seen.received, plain.received, "same deliveries");
 
         uint64_t antsSent = 0;
