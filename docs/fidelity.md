@@ -140,7 +140,7 @@ AntHocNet (CONTEXT.md), so there is no *Differences from* section.
 | AntHocNet comparison: pause sweep | 0, 10, 30, 70, 100, 200, …, 900 s | [W07] Fig. 5.8, Fig. 5.9, Fig. 5.10 | The area of this sweep is not stated ([DDG04] §4.2 used 2500 m × 300 m) |
 | AntHocNet comparison: scaling sweep | scaling factor 1 to 2; edges × factor, nodes × factor², up to 200 nodes in 3000 m × 1000 m | [W07] p. 39, Fig. 5.11 | [W07] starts from 1500 m × 300 m, which × 2 gives 3000 m × 600 m, not the stated end point; [DDG04] §4.2 starts from 1500 m × 500 m, which does. The anchor uses [DDG04]'s start area, 1500 m × 500 m (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)); [W07]'s 1500 m × 300 m is recorded as the thesis's inconsistency |
 | AntHocNet comparison: traffic, radio range, propagation, MAC | — | unknown | Not restated in [W07]. [DDG04] §4.1: 20 CBR sources, one 64-byte packet per second, starting in [0, 180] s; two-ray propagation; 300 m range; 2 Mbit/s; 802.11 DCF. [W07]'s own base scenario uses 250 m and one packet every 3 s. The anchor here uses [DDG04]'s values (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)) |
-| AntHocNet implementation and its parameters | — | unknown | [W07] names none: no simulator port, no source, no parameter. See *The comparison the thesis ran* |
+| AntHocNet implementation and its parameters | `swarm-routing/AntHocNet` at the v2.7.0 release commit, its defaults (pinned once v2.7.0 ships) | repo choice (maintainer decision 2026-11-13, [#28](https://github.com/swarm-routing/HOPNET/issues/28)): the AntHocNet release that ships in step with this anchor, with [DDG04] as its reference paper; a release commit is fixed, reviewed and citable, where `main` moves | [W07] names none: no simulator port, no source, no parameter. See *The comparison the thesis ran* |
 | ZRP comparison scenario | 200 nodes, 5000 m × 1250 m, random waypoint 20 m/s, range 250 m | [W07] p. 42, Fig. 5.15 | From [W07] ref. [45]; ZRP is not an org arm |
 
 ## The comparison the thesis ran
@@ -199,7 +199,9 @@ reproduced as the thesis measured it:
   500 m start area, 300 m range, one packet per second (repo choice,
   maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). [W07]'s 1500 m × 300 m start
   area is inconsistent with its own stated end point and is recorded, not used.
-- *AntHocNet*: `swarm-routing/AntHocNet` at a pinned commit, whose reference
+- *AntHocNet*: `swarm-routing/AntHocNet` at the v2.7.0 release commit, pinned
+  once v2.7.0 ships (maintainer decision 2026-11-13,
+  [#28](https://github.com/swarm-routing/HOPNET/issues/28)), whose reference
   paper is [DDG04]. That is closer to the AntHocNet in [W07]'s figures than
   anything [W07] itself specifies, but it is not the same implementation and
   not the same simulator; agreement is judged on direction, not values.
@@ -218,11 +220,11 @@ anchor tests that reconstruction; say so wherever its numbers appear.
 
 ## Anchor candidate
 
-Accepted as the anchor (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). AntHocNet is pinned at a commit stated with each run.
+Accepted as the anchor (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). AntHocNet is pinned at the v2.7.0 release commit, stated with each run once v2.7.0 ships (maintainer decision 2026-11-13, [#28](https://github.com/swarm-routing/HOPNET/issues/28)).
 
 | Trend | Scenario | Metric | Comparators | Source |
 |---|---|---|---|---|
-| HOPNET (zone radius 2) delivers more than AntHocNet at every scaling factor, and its lead grows with scale: about +0.01 at factor 1, about +0.035 at factor 2 in the thesis | [DDG04]'s scaling experiment, which [W07] reuses: scaling factor s ∈ {1, 1.25, 1.5, 1.75, 2}, 50·s² nodes rounded to the nearest integer, halves up (50, 78, 113, 153, 200: a repo choice, [DDG04] §4.2 gives only the end points) in (1500·s) m × (500·s) m, random waypoint up to 20 m/s, pause 30 s, 900 s, 20 CBR sources of one 64-byte packet per second, 802.11, 2 Mbit/s, 300 m range (the [DDG04] values where [W07] is silent or inconsistent: repo choice) | Paired by seed, HOPNET minus AntHocNet delivery ratio, ≥ 20 seeds per point: 95 % CI above zero at s = 2, and the s = 2 delta larger than the s = 1 delta (paired difference of deltas, CI above zero). Delay and overhead reported, not gated ([W07] gives neither for this experiment) | AntHocNet (`swarm-routing/AntHocNet` at a pinned commit, defaults stated with the run) | [W07] Fig. 5.11, p. 39; [DDG04] §4.2, Fig. 3 |
+| HOPNET (zone radius 2) delivers more than AntHocNet at every scaling factor, and its lead grows with scale: about +0.01 at factor 1, about +0.035 at factor 2 in the thesis | [DDG04]'s scaling experiment, which [W07] reuses: scaling factor s ∈ {1, 1.25, 1.5, 1.75, 2}, 50·s² nodes rounded to the nearest integer, halves up (50, 78, 113, 153, 200: a repo choice, [DDG04] §4.2 gives only the end points) in (1500·s) m × (500·s) m, random waypoint up to 20 m/s, pause 30 s, 900 s, 20 CBR sources of one 64-byte packet per second, 802.11, 2 Mbit/s, 300 m range (the [DDG04] values where [W07] is silent or inconsistent: repo choice) | Paired by seed, HOPNET minus AntHocNet delivery ratio, ≥ 20 seeds per point: 95 % CI above zero at s = 2, and the s = 2 delta larger than the s = 1 delta (paired difference of deltas, CI above zero). Delay and overhead reported, not gated ([W07] gives neither for this experiment) | AntHocNet (`swarm-routing/AntHocNet` at the v2.7.0 release commit, its defaults, stated with the run) | [W07] Fig. 5.11, p. 39; [DDG04] §4.2, Fig. 3 |
 
 Not gated, recorded as checks on the reconstruction (the two thesis results
 that cut against HOPNET): Fig. 5.7 (HOPNET below
