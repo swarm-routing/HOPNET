@@ -295,23 +295,43 @@ void TestQueryDelay(Checker& c) {
         c.check(net.inter(D).onQueryDelay(S, 70).decisions.empty(), "a second timer finds nothing");
     }
     {
-        // A copy D relays in the wait from another bordercaster (M) covers its
-        // zone: the bordercast is cancelled (BRP §4).
+        // A copy from another bordercaster (M) that D would relay in the wait
+        // ends at D (q): it covers nothing, so D still bordercasts, skipping M
+        // (on its Path). Clarified on #5: otherwise the query could die here.
         Net net = fig41();
         net.inter(D).onReceive(externalAnt(S, T, 71, {S}, D), C);
-        net.inter(D).onReceive(externalAnt(S, T, 71, {S, M}, C), I);
-        const Outcome go = net.inter(D).onQueryDelay(S, 71);
-        c.check(go.decisions.size() == 1 && go.decisions[0].action == RouteAction::Drop,
-                "a covering copy relayed in the wait cancels the bordercast");
+        const Outcome ended = net.inter(D).onReceive(externalAnt(S, T, 71, {S, M}, C), I);
+        c.check(ended.decisions.size() == 1 && ended.decisions[0].action == RouteAction::Drop,
+                "D ends M's copy (q)");
+        std::set<NodeAddress> targets;
+        for (const auto& d : net.inter(D).onQueryDelay(S, 71).decisions)
+            if (d.message) targets.insert(d.message->target);
+        c.check(targets == std::set<NodeAddress>{K},
+                "and still bordercasts, without M: a copy it ended covers nothing");
     }
     {
-        // So does one D overhears (#5 (s)).
+        // The case that clarified it (#5): at seed 11, T's query reaches M
+        // from R; M waits, and ends O's copies (q) in the wait. M must still
+        // bordercast, or T's discovery fails. With and without (s).
+        for (bool ovh : {false, true}) {
+            Config cfg;
+            cfg.queryOverhearing = ovh;
+            Net net = fig41(11, cfg);
+            net.send(S, T);
+            net.send(T, S);
+            c.check(net.delivered.size() == 2 && net.inter(T).table().find(S, 0.0),
+                    ovh ? "T finds S with overhearing" : "T finds S (QD1 only)");
+        }
+    }
+    {
+        // A copy D overhears from another bordercaster goes on past D: it
+        // covers D's zone and cancels the bordercast (#5 (s)).
         Net net = fig41();
         net.inter(D).onReceive(externalAnt(S, T, 72, {S}, D), C);
         net.inter(D).overhear(externalAnt(S, T, 72, {S, M}, C));
         const Outcome go = net.inter(D).onQueryDelay(S, 72);
         c.check(go.decisions.size() == 1 && go.decisions[0].action == RouteAction::Drop,
-                "a covering copy overheard in the wait cancels it too");
+                "a covering copy overheard in the wait cancels the bordercast");
     }
     {
         // A copy from the same bordercaster does not cover D.

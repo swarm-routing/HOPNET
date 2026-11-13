@@ -135,8 +135,9 @@ are the defaults, and are recorded in `docs/fidelity.md` ("Query control",
    draft §4 and Appendix E.2, `RELAY_JITTER`): a bordercaster addressed by
    a copy that found no route and is not covered waits U[0, 0.1 s), drawn
    from the node's `IRng`, before it bordercasts; the query's origin never
-   waits. In the wait, a copy detected from another bordercaster cancels
-   the bordercast, and the Path nodes of the copies it sees are skipped as
+   waits. In the wait, a copy overheard from another bordercaster cancels
+   the bordercast (one the node ends itself under (q) does not, as
+   clarified on #5), and the Path nodes of the copies it sees are skipped as
    peripheral nodes. `Config::queryProcessingDelay = 0` turns it off.
 
 Both are repo readings and deviations in cost from [W07] p. 28, as (q) is.

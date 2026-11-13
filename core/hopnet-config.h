@@ -114,7 +114,8 @@ struct Config {
     /// that received a copy addressed to it, found no route and is not
     /// covered waits U[0, queryProcessingDelay) seconds, drawn from the IRng,
     /// before it bordercasts. In the wait, a copy detected from another
-    /// bordercaster (relayed or overheard) cancels the bordercast, and the
+    /// bordercaster that goes on (overheard; one this node ends under (q)
+    /// covers nothing) cancels the bordercast, and the
     /// Path nodes of every copy it handles or overhears are skipped as
     /// peripheral nodes (with queryDetection on). Fidelity "Query-processing
     /// delay": 0.1 s, repo choice. 0 = bordercast at once.

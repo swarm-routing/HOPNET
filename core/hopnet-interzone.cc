@@ -272,7 +272,9 @@ Outcome InterZone::onExternalForward(const Ant& ant, NodeAddress from) {
         // not a bordercast and always goes on (BRP: a node that knows the
         // route forwards the query to the destination).
         const bool fresh = directed(ant) || detect(ant, previousBordercaster(ant));
-        learn(ant, !fresh);  // a bordercast waiting here is covered (#5 (t))
+        // A copy this node ends covers nothing: only its Path is learned
+        // (#5 (t), clarified: coverage comes from copies that go on).
+        learn(ant, false);
         if (!fresh) return one(Decision::drop());
         return one(relay(ant, false));
     }

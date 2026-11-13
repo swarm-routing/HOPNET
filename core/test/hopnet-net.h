@@ -6,7 +6,8 @@
 // pair, the adapter's queue and repair timers included; the Fig. 4.1 fixture;
 // and helpers that build ants by hand. A unicast ant is also overheard by the
 // sender's other neighbours (#5 (s)), and a query-processing delay (#5 (t))
-// ends when the air is quiet, shortest wait first, with the clock unmoved.
+// ends when the air is quiet, earliest deadline first on a clock of its own
+// (the FakeClock does not move).
 #ifndef HOPNET_CORE_TEST_NET_H
 #define HOPNET_CORE_TEST_NET_H
 
@@ -134,7 +135,7 @@ private:
         NodeAddress node, dest;
     };
     struct QueryTimer {
-        Time wait;
+        Time at;  // deadline on queryNow_
         NodeAddress node, source;
         std::uint32_t seq;
     };
@@ -195,7 +196,7 @@ private:
             timers_.push_back({clock_.now() + o.repairWait, at, o.repairFor});
         if (o.querySource != kInvalidAddress) {
             queryWaits.emplace_back(at, o.queryWait);
-            queryTimers_.push_back({o.queryWait, at, o.querySource, o.querySeq});
+            queryTimers_.push_back({queryNow_ + o.queryWait, at, o.querySource, o.querySeq});
         }
         if (o.routeReady != kInvalidAddress) {  // re-offer what waits for it
             std::vector<DataHeader> waiting;
@@ -225,9 +226,10 @@ private:
             if (queryTimers_.empty()) break;
             const auto next = std::min_element(
                 queryTimers_.begin(), queryTimers_.end(),
-                [](const QueryTimer& a, const QueryTimer& b) { return a.wait < b.wait; });
+                [](const QueryTimer& a, const QueryTimer& b) { return a.at < b.at; });
             const QueryTimer fire = *next;
             queryTimers_.erase(next);
+            queryNow_ = fire.at;
             emit(fire.node, inter(fire.node).onQueryDelay(fire.source, fire.seq), nullptr);
         }
     }
@@ -241,6 +243,7 @@ private:
     std::deque<Frame> air_;
     std::vector<Timer> timers_;
     std::vector<QueryTimer> queryTimers_;
+    Time queryNow_ = 0.0;  // the query timers' own clock: deadlines, not durations, order them
 };
 
 // [W07] Fig. 4.1 as the pre-registration reads it (#5 (b), (d)), radius 2:
