@@ -23,13 +23,14 @@ struct Config {
     int zoneRadius = 2;
 
     /// Period of a node's internal forward ants, seconds. Fidelity "Internal
-    /// forward ant period": 1 s, repo choice (#4).
-    Time internalAntPeriod = 1.0;
+    /// forward ant period": 2 s, repo choice (#5 (n), maintainer decision
+    /// 2026-11-13; was 1 s, #4).
+    Time internalAntPeriod = 2.0;
 
     /// A neighbour is dropped after this many internal-ant periods without an
-    /// ant from it (2 x 1 s = 2 s). Fidelity Mechanisms, neighbour discovery
-    /// row: repo choice (#5 (e)).
-    int allowedAntLoss = 2;
+    /// ant from it (3 x 2 s = 6 s). Fidelity Mechanisms, neighbour discovery
+    /// row: repo choice (#5 (p), maintainer decision 2026-11-13; was 2, #5 (e)).
+    int allowedAntLoss = 3;
 
     /// Deposit scale of eqs. 4.1 and 4.3. Fidelity "epsilon": 1, repo choice
     /// (#4); [W07] p. 26 leaves it to the user.
@@ -69,9 +70,10 @@ struct Config {
     Time routeLifetime = 3.0;
 
     /// At most one route discovery per destination per this many seconds.
-    /// Fidelity "Route-discovery retry policy at the source": 1 s, repo choice
-    /// (#4; AntHocNet's Config::reactiveRetryInterval).
-    Time discoveryRetryInterval = 1.0;
+    /// Fidelity "Route-discovery retry policy at the source": 3 s, repo choice
+    /// (#5 (o), maintainer decision 2026-11-13: the 3 s hold, so a held packet
+    /// waits for at most one discovery of its own; was 1 s, #4).
+    Time discoveryRetryInterval = 3.0;
 
     /// Local repair ([W07] §4.3, p. 29: no backward ant "after a period of
     /// time"): the repairing node waits repairWaitFactor x the lost path's

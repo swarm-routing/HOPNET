@@ -413,14 +413,15 @@ void TestObserverRoutesAndState(Checker& c) {
         z.onReceive(ant(2, 2, 1), 2);  // (2, 2): the neighbour
         z.onReceive(ant(3, 2, 1), 2);  // (2, 3): a zone node through it
         c.check(z.table().size() == 2 && rec.states.back().first == 2, "two cells");
-        clock.set(1.0);
+        const Config cfg;
+        clock.set(cfg.internalAntPeriod);
         z.onInternalAntTimer();
         z.onReceive(ant(2, 2, 2), 2);  // only the neighbour is heard again
-        clock.set(2.0);
+        clock.set(cfg.neighbourTimeout());
         rec.routes.clear();
         z.onInternalAntTimer();
         c.check(rec.routes == std::vector<Recorder::Route>{{3, 2, false}},
-                "the cell no ant refreshed for two periods: one route removal");
+                "the cell no ant refreshed for the neighbour timeout: one route removal");
         c.check(z.table().size() == 1 && z.table().hasNeighbour(2) && !z.table().minHops(3),
                 "the neighbour's own cell stays");
         c.check(rec.states.back() ==
