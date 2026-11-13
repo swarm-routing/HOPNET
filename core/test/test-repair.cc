@@ -125,6 +125,88 @@ void TestRepairSuccess(Checker& c) {
             "S's next packet takes the new route at once");
 }
 
+void TestNoPheromoneIsLinkFailure(Checker& c) {
+    // #5 (r), accepted 2026-11-13: inter-zone data that finds no neighbour
+    // with pheromone toward its next Path node is handled as a data
+    // transmission that failed with no other neighbour (#5 (e)), not dropped
+    // ([W07] p. 34). The radio links stay; only the node's IntraRT loses them.
+    {
+        // At a Path node: M lost its row for O, its only way to U.
+        Net net = fig41();
+        net.send(S, T);
+        const std::uint32_t mSeq = net.intra(M).lastSeq();
+        net.intra(M).onLinkFailure(O);
+        net.ants.clear();
+        net.delivered.clear();
+        net.send(S, T);
+        bool repairAnt = false;
+        for (const auto& s : net.antsOf(AntType::ExternalForward))
+            repairAnt |= s.from == M && s.ant.source == M && s.ant.seq == mSeq + 1;
+        c.check(repairAnt && net.drops[M] == 0, "M starts a local repair instead of dropping");
+        c.check(net.delivered.size() == 1 &&
+                    net.delivered[0].second.route == std::vector<NodeAddress>{S, D, M, R, T},
+                "and the packet arrives on the repaired route");
+    }
+    {
+        // At a transit relay: I, between D and M, lost its row for M.
+        Net net = fig41();
+        net.send(S, T);
+        net.intra(I).onLinkFailure(M);
+        net.cut(I, M);  // and the repair cannot go that way either
+        net.cut(D, J);
+        net.cut(D, L);
+        net.delivered.clear();
+        net.send(S, T);
+        c.check(net.inter(I).repairing(T) && net.queued[I].size() == 1 && net.drops[I] == 0,
+                "I repairs ((m)) and buffers the packet");
+        net.advance(1.0);
+        bool error = false;
+        for (const auto& s : net.antsOf(AntType::Error))
+            error |= s.from == I && s.ant.destination == S;
+        c.check(error && net.discarded[I] == 1, "no backward ant: S gets the error ant");
+    }
+    {
+        // At the source: S lost its row for C, its only way to D.
+        Config cfg;
+        cfg.discoveryRetryInterval = 0.5;
+        Net net = fig41(1, cfg);
+        net.send(S, T);
+        net.intra(S).onLinkFailure(C);
+        net.clock().set(0.5);
+        const std::uint32_t seq = net.intra(S).lastSeq();
+        const Outcome o = net.send(S, T);
+        c.check(o.decisions.back().action == RouteAction::Queue && net.drops[S] == 0 &&
+                    net.intra(S).lastSeq() == seq + 1 && !net.inter(S).table().find(T, 0.5),
+                "S's record goes, a discovery starts and the packet waits");
+    }
+    {
+        // Intra-zone data carries no route: still dropped (p. 34). C, on S's
+        // way to D, lost its row for D.
+        Net net = fig41();
+        net.intra(C).onLinkFailure(D);
+        net.send(S, D);
+        c.check(net.drops[C] == 1 && net.delivered.empty() && !net.inter(C).repairing(D),
+                "intra-zone data with no pheromone is dropped");
+    }
+    {
+        // With the switch off, the p. 34 drop.
+        Config cfg;
+        cfg.noPheromoneIsLinkFailure = false;
+        Net net = fig41(1, cfg);
+        net.send(S, T);
+        net.intra(M).onLinkFailure(O);
+        net.delivered.clear();
+        net.send(S, T);
+        c.check(net.drops[M] == 1 && net.delivered.empty() && !net.inter(M).repairing(T),
+                "noPheromoneIsLinkFailure = false: M drops it");
+        net.intra(S).onLinkFailure(C);
+        const Outcome o = net.send(S, T);
+        c.check(o.decisions.size() == 1 && o.decisions[0].action == RouteAction::Drop &&
+                    net.inter(S).table().find(T, 0.0),
+                "and so does the source, keeping its record");
+    }
+}
+
 void TestRepairFailure(Checker& c) {
     // #5 (i), (l): T unreachable from M. After the wait (1 s, a transit M has
     // no estimate) each buffered source gets one error ant.

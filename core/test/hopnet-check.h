@@ -119,6 +119,7 @@ void TestRepairSources(Checker& c);
 void TestNotificationInvalid(Checker& c);
 void TestSpliceLoop(Checker& c);
 void TestRepairAtTransitRelay(Checker& c);
+void TestNoPheromoneIsLinkFailure(Checker& c);
 void TestRepairDeterminism(Checker& c);
 void TestKindNames(Checker& c);
 void TestObserverIntraZone(Checker& c);
@@ -166,6 +167,7 @@ inline const std::vector<NamedTest>& AllTests() {
         {"notification-invalid", TestNotificationInvalid},
         {"splice-loop", TestSpliceLoop},
         {"repair-at-transit-relay", TestRepairAtTransitRelay},
+        {"no-pheromone-is-link-failure", TestNoPheromoneIsLinkFailure},
         {"repair-determinism", TestRepairDeterminism},
         {"kind-names", TestKindNames},
         {"observer-intrazone", TestObserverIntraZone},
