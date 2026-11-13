@@ -332,10 +332,12 @@ void TestObserverRoutesAndState(Checker& c) {
     {
         Recorder rec;
         IntraZoneTable t(2, 0.2, &rec);
-        c.check(t.update(7, 3, 1.0, 1, 1) && t.update(7, 3, 1.0, 1, 2) && rec.routes.size() == 1,
+        c.check(t.update(7, 3, 1.0, 1, 1, 0.0) && t.update(7, 3, 1.0, 1, 2, 0.0) &&
+                    rec.routes.size() == 1,
                 "a deposit into an existing cell is no route event");
-        c.check(t.update(7, 4, 1.0, 2, 1) && rec.routes.size() == 2, "a new cell");
-        c.check(!t.update(8, 4, 1.0, 1, 1) && rec.routes.size() == 2, "a full table adds none");
+        c.check(t.update(7, 4, 1.0, 2, 1, 0.0) && rec.routes.size() == 2, "a new cell");
+        c.check(!t.update(8, 4, 1.0, 1, 1, 0.0) && rec.routes.size() == 2,
+                "a full table adds none");
         c.check(t.removeNeighbour(3) == 1 && rec.routes.size() == 3 && !rec.routes[2].added,
                 "a removed row");
     }
@@ -387,6 +389,43 @@ void TestObserverRoutesAndState(Checker& c) {
         c.check(std::any_of(rec.routes.begin(), rec.routes.end(),
                             [](const auto& e) { return !e.added; }),
                 "removals were reported");
+    }
+    // A zone node that moved away (#93, the stale-entry row): its cells leave
+    // as route removals while the neighbour's row stays, and the footprint
+    // follows.
+    {
+        Recorder rec;
+        FakeClock clock;
+        FakeLinkState link;
+        SeededRng rng(1);
+        IntraZone z(Config{}, 1, clock, link, rng, &rec);
+        const auto ant = [](NodeAddress source, NodeAddress via, std::uint32_t seq) {
+            Ant a{.type = AntType::InternalForward,
+                  .source = source,
+                  .seq = seq,
+                  .hops = 1,
+                  .time = 0.01,
+                  .path = VisitedPath(100)};
+            a.path.push(source, 0.005);
+            if (via != source) a.path.push(via, 0.01);
+            return a;
+        };
+        z.onReceive(ant(2, 2, 1), 2);  // (2, 2): the neighbour
+        z.onReceive(ant(3, 2, 1), 2);  // (2, 3): a zone node through it
+        c.check(z.table().size() == 2 && rec.states.back().first == 2, "two cells");
+        clock.set(1.0);
+        z.onInternalAntTimer();
+        z.onReceive(ant(2, 2, 2), 2);  // only the neighbour is heard again
+        clock.set(2.0);
+        rec.routes.clear();
+        z.onInternalAntTimer();
+        c.check(rec.routes == std::vector<Recorder::Route>{{3, 2, false}},
+                "the cell no ant refreshed for two periods: one route removal");
+        c.check(z.table().size() == 1 && z.table().hasNeighbour(2) && !z.table().minHops(3),
+                "the neighbour's own cell stays");
+        c.check(rec.states.back() ==
+                    std::make_pair(std::uint32_t{1}, static_cast<std::uint32_t>(z.table().bytes())),
+                "and the footprint follows");
     }
 }
 

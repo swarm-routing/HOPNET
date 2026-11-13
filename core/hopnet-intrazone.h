@@ -47,7 +47,8 @@ public:
               IRng& rng, swarm::core::IRouterObserver* observer = nullptr);
 
     /// Every Config::internalAntPeriod: drops neighbours silent for
-    /// Config::neighbourTimeout(), then returns the broadcast of a new internal
+    /// Config::neighbourTimeout() and cells no ant refreshed for as long
+    /// (purgeStaleNeighbours), then returns the broadcast of a new internal
     /// forward ant (Hops = zone radius, [W07] p. 25).
     Decision onInternalAntTimer();
 
@@ -63,7 +64,10 @@ public:
     /// failures): its row goes at once (fidelity, neighbour discovery row).
     void onLinkFailure(NodeAddress neighbour);
 
-    /// Removes the rows of neighbours with no ant for neighbourTimeout().
+    /// Removes the rows of neighbours with no ant for neighbourTimeout(), then
+    /// every cell no ant has updated (eq. 4.1 or 4.3) for neighbourTimeout():
+    /// a zone node that is no longer reachable through a neighbour that stays
+    /// (fidelity, stale IntraRT entry row; #93).
     void purgeStaleNeighbours();
 
     /// Next hop toward zone node `dest` by roulette over its IntraRT column

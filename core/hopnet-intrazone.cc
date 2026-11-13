@@ -76,7 +76,7 @@ Decision IntraZone::onInternalForward(const Ant& ant, NodeAddress from) {
     // Eq. 4.1 at v_j = self from v_i = from: cell (from, S) gains
     // eps / (T(S, v_i) + w(v_i, v_j)), the Time the ant carries.
     table_.update(ant.source, from, config_.epsilon / ant.time, static_cast<int>(ant.path.size()),
-                  ant.seq);
+                  ant.seq, clock_.now());
     heard(from);
     if (!forwarded_.record(ant.source, ant.seq)) return Decision::none();  // a later copy
 
@@ -112,7 +112,7 @@ Decision IntraZone::onInternalBackward(const Ant& ant, NodeAddress from) {
     const double arrival = hops.size() >= 2 ? hops[hops.size() - 2].time : 0.0;
     const double tPrime = ant.time - arrival;
     if (!positiveFinite(tPrime)) return Decision::drop();
-    table_.update(ant.source, from, config_.epsilon / tPrime, ant.hops, ant.seq);
+    table_.update(ant.source, from, config_.epsilon / tPrime, ant.hops, ant.seq, clock_.now());
     heard(from);
 
     if (hops.size() == 1) {
@@ -144,6 +144,11 @@ void IntraZone::purgeStaleNeighbours() {
         } else {
             ++it;
         }
+    }
+    // The stale-entry rule: the same timeout, per cell. A row it empties has
+    // no loss timer to keep (lastHeard_ holds rows only).
+    if (table_.removeStale(now, config_.neighbourTimeout()) > 0) {
+        std::erase_if(lastHeard_, [&](const auto& kv) { return !table_.hasNeighbour(kv.first); });
     }
     reportState();
 }
