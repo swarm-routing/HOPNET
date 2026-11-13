@@ -74,8 +74,7 @@ $C plan P.yaml                                        # every job; dispatches no
 $C dispatch P.yaml --cap 4                            # resumable: re-run until every label is logged
 $C status P.yaml --brief                              # poll lightly (15 min)
 G=$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))["generation"])' P.yaml)
-$C collect P.yaml --out ".campaign/$G/cells"          # rejects a cell whose ##PROV## is not its pin
-grep -ho '\(swarm-core\|routing-bench\|anthocnet\)@[0-9a-f]*' ".campaign/$G/cells"/*.txt | sort -u   # must print 3 lines
+$C collect P.yaml --out ".campaign/$G/cells"          # rejects a cell whose ##PROV## is not its pin or the campaign's one dependency set
 $C verdicts P.yaml --dir ".campaign/$G/cells"         # head minus base (or minus `reference`), paired 95 % CI per cell
 ```
 
@@ -83,10 +82,11 @@ and put the `verdicts` lines in the PR (no hand numbers, ns3-tools rule 13).
 `pilot.yaml` is a one-arm plan with `reference: anthocnet`: `verdicts` prints
 hopnet minus anthocnet per cell. The dependency commits come from
 `benchmark-cell.yml` at the dispatch ref (`main`), not from the plan, and
-`collect` checks only `source_sha` and the image: do not merge a change to
-that file's `dependencies` while a campaign is in flight, and the `grep`
-above (one commit per dependency across every cell) is the check that none
-did. State lives in `.campaign/<generation>/` (git-ignored); a cell's
+`collect` (ns3-tools v0.2.0 or later, swarm-routing/ns3-tools#148) also
+rejects a cell whose `##PROV## modules=` dependency commits are not the one
+set the campaign's cells recorded first: do not merge a change to that file's
+`dependencies` while a campaign is in flight, or its later cells are rejected.
+State lives in `.campaign/<generation>/` (git-ignored); a cell's
 artifact is kept 7 days.
 
 ## Golden rules (invariants — do not break)
