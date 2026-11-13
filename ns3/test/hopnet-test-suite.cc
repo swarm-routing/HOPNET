@@ -546,6 +546,62 @@ private:
     }
 };
 
+class InputGuardsTestCase : public TestCase {
+public:
+    InputGuardsTestCase()
+        : TestCase("adapter: short UDP payloads and subnet broadcasts reach no header reader") {}
+
+private:
+    void DoRun() override {
+        SwarmCoreSeed(1);
+        NodeContainer nodes;
+        nodes.Create(2);
+        NetDeviceContainer devs = LineOfWifiNodes(nodes);
+        HopnetHelper hopnet;
+        hopnet.Install(nodes);
+        Ipv4AddressHelper a;
+        a.SetBase("10.1.0.0", "255.255.255.0");
+        a.Assign(devs);
+        Ptr<ns3::hopnet::RoutingProtocol> p1 =
+            nodes.Get(1)->GetObject<ns3::hopnet::RoutingProtocol>();
+        Simulator::Schedule(MilliSeconds(1), [this, p1, devs]() {
+            const auto ucb = MakeCallback(&InputGuardsTestCase::Unicast, this);
+            const auto mcb = MakeCallback(&InputGuardsTestCase::Multicast, this);
+            const auto lcb = MakeCallback(&InputGuardsTestCase::Deliver, this);
+            const auto ecb = MakeCallback(&InputGuardsTestCase::Error, this);
+            Ipv4Header h;
+            h.SetSource(Ipv4Address("10.1.0.1"));
+            h.SetProtocol(17);
+            h.SetTtl(64);
+            // Three bytes of "UDP" for another node: no UDP header to peek, no
+            // DataHeader: refused, nothing read past the payload.
+            h.SetDestination(Ipv4Address("10.1.0.3"));
+            m_shortTaken = p1->RouteInput(Create<Packet>(3), h, devs.Get(1), ucb, mcb, lcb, ecb);
+            // A subnet-directed broadcast: the base's, delivered locally.
+            h.SetDestination(Ipv4Address("10.1.0.255"));
+            Ptr<Packet> b = Create<Packet>(16);
+            UdpHeader udp;
+            udp.SetSourcePort(49153);
+            udp.SetDestinationPort(9);
+            b->AddHeader(udp);
+            p1->RouteInput(b, h, devs.Get(1), ucb, mcb, lcb, ecb);
+        });
+        Simulator::Stop(MilliSeconds(10));
+        Simulator::Run();
+        Simulator::Destroy();
+        NS_TEST_EXPECT_MSG_EQ(m_shortTaken, false, "the short packet is refused");
+        NS_TEST_EXPECT_MSG_EQ(m_delivered, 1u, "the subnet broadcast delivered by the base");
+    }
+
+    void Unicast(Ptr<Ipv4Route>, Ptr<const Packet>, const Ipv4Header&) {}
+    void Multicast(Ptr<Ipv4MulticastRoute>, Ptr<const Packet>, const Ipv4Header&) {}
+    void Deliver(Ptr<const Packet>, const Ipv4Header&, uint32_t) { ++m_delivered; }
+    void Error(Ptr<const Packet>, const Ipv4Header&, Socket::SocketErrno) {}
+
+    bool m_shortTaken = true;
+    uint32_t m_delivered = 0;
+};
+
 class HopnetTestSuite : public TestSuite {
 public:
     HopnetTestSuite() : TestSuite("hopnet", Type::UNIT) {
@@ -558,6 +614,7 @@ public:
         AddTestCase(new DeterminismTestCase, TestCase::Duration::QUICK);
         AddTestCase(new ObserverTestCase, TestCase::Duration::QUICK);
         AddTestCase(new AdapterGuardsTestCase, TestCase::Duration::QUICK);
+        AddTestCase(new InputGuardsTestCase, TestCase::Duration::QUICK);
     }
 };
 
