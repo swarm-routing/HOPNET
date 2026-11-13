@@ -16,7 +16,7 @@ ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
 # swarm-core's core/ at the commit core/CMakeLists.txt pins (SWARM_CORE_REF), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
-SWARM_CORE_REF ?= 3ced81506bd906163dc83f5825d77ca170609dfb
+SWARM_CORE_REF ?= 0919dbfe4a48495a2eda32335a1be6fae453c87c
 
 .DEFAULT_GOAL := help
 .PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core dist
