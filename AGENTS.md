@@ -7,7 +7,7 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11. The ns-3 module `hopnet` carries them out on swarm-core's `SwarmRoutingBase` (#5; it waited until ARA's built green against swarm-core, maintainer decision 2026-11-10, #3, met on ARA's `main`); the gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet, #28) are not run yet.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading.
+**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11. After the anchor pilot `pilot-1` was NO-GO (HOPNET's own control traffic collapsed the channel, #109), readings (n)–(r), accepted 2026-11-13, cut that traffic: internal-ant period 2 s, discovery retry 3 s, neighbour loss after 3 periods, ZRP query detection and early termination, and no pheromone toward the next Path node treated as a link failure ([ADR-0002](docs/adr/0002-cut-control-traffic-after-pilot-1.md)); `pilot-2` re-runs the pilot on them. The ns-3 module `hopnet` carries them out on swarm-core's `SwarmRoutingBase` (#5; it waited until ARA's built green against swarm-core, maintainer decision 2026-11-10, #3, met on ARA's `main`); the gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet, #28) are not run yet.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
@@ -30,7 +30,7 @@ ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-cor
   test/hopnet-test-suite.cc        `test.py -s hopnet`: the core tests, both readers' roundtrip and fuzz, a 4-node chain across zones,
                                    determinism, the observer's trace sources identical with and without
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
-tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke against the base), pilot.yaml (the anchor's 5-seed pilot, #5)
+tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke against the base), pilot.yaml (the anchor's 5-seed pilot `pilot-1`, #5), pilot-2.yaml (the same after readings (n)–(r), ADR-0002)
 .github/workflows/benchmark-cell.yml   one benchmark cell at a pinned source_sha (reusable-benchmark-cell.yml, build mode); dispatched by ns3-campaign
 ```
 

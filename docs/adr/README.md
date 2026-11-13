@@ -7,3 +7,4 @@ changes is superseded by a new ADR, not edited. Start from
 | ADR | Decision |
 |-----|----------|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions |
+| [0002](0002-cut-control-traffic-after-pilot-1.md) | Cut HOPNET's control traffic after the pilot-1 NO-GO: readings (n)–(r) |
