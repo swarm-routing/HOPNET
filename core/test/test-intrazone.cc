@@ -278,22 +278,26 @@ void TestZoneAfterOnePeriod(Checker& c) {
 }
 
 void TestNeighbourLoss(Checker& c) {
-    // #5 (e) pinned: discovery by the first-hop ant, loss after 2 s or a MAC failure.
+    // #5 (e) pinned: discovery by the first-hop ant, loss after
+    // Config::neighbourTimeout() (3 periods of 2 s = 6 s, #5 (n), (p)) or a MAC
+    // failure.
+    const Time timeout = Config{}.neighbourTimeout();
+    c.check(timeout == 6.0, "the neighbour timeout: 3 internal-ant periods of 2 s");
     Net net;
     net.link(0, 1);
     net.tick(1);
     c.check(hopsOf(net.at(0), 1, 1) == 1, "the first-hop ant from 1 creates (1, 1), hops 1");
-    net.clock().set(1.9);
+    net.clock().set(timeout - 0.1);
     net.at(0).purgeStaleNeighbours();
-    c.check(net.at(0).table().hasNeighbour(1), "still a neighbour at 1.9 s");
-    net.clock().set(2.0);
+    c.check(net.at(0).table().hasNeighbour(1), "still a neighbour at 5.9 s");
+    net.clock().set(timeout);
     net.at(0).purgeStaleNeighbours();
-    c.check(!net.at(0).table().hasNeighbour(1), "gone after 2 periods without an ant");
+    c.check(!net.at(0).table().hasNeighbour(1), "gone after 3 periods without an ant");
     net.tick(1);
     c.check(net.at(0).table().hasNeighbour(1), "rediscovered by the next ant");
-    net.clock().set(3.5);
+    net.clock().set(timeout + 5.5);
     net.at(0).onInternalAntTimer();
-    c.check(net.at(0).table().hasNeighbour(1), "heard at 2.0 s: kept at 3.5 s");
+    c.check(net.at(0).table().hasNeighbour(1), "heard at 6 s: kept at 11.5 s");
     net.at(0).onLinkFailure(1);
     c.check(!net.at(0).table().hasNeighbour(1), "a unicast failure removes the row at once");
 }

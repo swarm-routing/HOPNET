@@ -82,6 +82,110 @@ void TestBordercastSkipByBestNeighbour(Checker& c) {
             "K is skipped when it is on Path, though its best neighbour is J");
 }
 
+void TestQueryDetection(Checker& c) {
+    // #5 (q), accepted 2026-11-13: ZRP's query detection (QD1) and early
+    // termination on top of (b), on Fig. 4.1. The previous bordercaster of a
+    // copy is the Path node it was sent from.
+    {
+        // Early termination at a transit relay: C carried (S, 50) from S.
+        Net net = fig41();
+        const Outcome toD = net.inject(C, externalAnt(S, T, 50, {S}, D), S);
+        c.check(toD.decisions.size() == 1 && toD.decisions[0].action == RouteAction::Unicast &&
+                    toD.decisions[0].nextHop == D,
+                "C relays S's copy toward D");
+        const Outcome toA = net.inject(C, externalAnt(S, T, 50, {S}, A), S);
+        c.check(toA.decisions.size() == 1 && toA.decisions[0].action == RouteAction::Unicast &&
+                    toA.decisions[0].nextHop == A,
+                "and S's second copy, toward A: one bordercast's branches both pass (b)");
+        const Outcome fromD = net.inject(C, externalAnt(S, T, 50, {S, D}, A), D);
+        c.check(fromD.decisions.size() == 1 && fromD.decisions[0].action == RouteAction::Drop,
+                "a copy of the same query from another bordercaster (D) ends at C");
+        const Outcome other = net.inject(C, externalAnt(S, T, 51, {S, D}, A), D);
+        c.check(other.decisions.size() == 1 && other.decisions[0].action == RouteAction::Unicast,
+                "another query (S, 51) is not affected");
+        // Directed copies are not bordercasts: they always pass.
+        net.inject(C, externalAnt(S, A, 52, {S}, D), S);
+        const Outcome toDest = net.inject(C, externalAnt(S, A, 52, {S, D}, A), D);
+        c.check(toDest.decisions.size() == 1 &&
+                    toDest.decisions[0].action == RouteAction::Unicast &&
+                    toDest.decisions[0].nextHop == A,
+                "a copy sent to the destination itself passes C");
+        net.inject(C, externalAnt(S, T, 53, {S}, D), S);
+        const Outcome cached = net.inject(C, externalAnt(S, T, 53, {S, D, A}, A), D);
+        c.check(cached.decisions.size() == 1 &&
+                    cached.decisions[0].action == RouteAction::Unicast &&
+                    cached.decisions[0].nextHop == A,
+                "and so does a copy following a cached InterRT route (target on Path)");
+    }
+    {
+        // A covered peripheral node does not bordercast: D relayed (S, 60)
+        // from M before S's copy addressed to D arrives.
+        Net net = fig41();
+        net.inject(D, externalAnt(S, T, 60, {S, M}, C), I);
+        const std::size_t before = net.ants.size();
+        const Outcome covered = net.inject(D, externalAnt(S, T, 60, {S}, D), C);
+        c.check(covered.decisions.size() == 1 && covered.decisions[0].action == RouteAction::Drop &&
+                    targetsSentBy(net, D, before).empty(),
+                "D, covered, does not bordercast S's copy");
+        net.inject(D, externalAnt(S, K, 61, {S, M}, C), I);
+        const Outcome inZone = net.inject(D, externalAnt(S, K, 61, {S}, D), C);
+        c.check(inZone.decisions.size() == 1 &&
+                    inZone.decisions[0].action == RouteAction::Unicast &&
+                    inZone.decisions[0].message->target == K,
+                "but still sends it toward a destination in its zone ([W07] p. 27)");
+    }
+    {
+        // The source records its own query: a copy that comes back to it
+        // through another bordercaster ends there.
+        Net net = fig41();
+        net.send(S, T);
+        const std::uint32_t seq = net.intra(S).lastSeq();
+        const Outcome back = net.inject(S, externalAnt(S, T, seq, {S, D}, E), C);
+        c.check(back.decisions.size() == 1 && back.decisions[0].action == RouteAction::Drop,
+                "the source detected its own query");
+    }
+    {
+        // The full discovery of Fig. 4.1 is unchanged by detection.
+        Net net = fig41();
+        net.send(S, T);
+        c.check(targetsSentBy(net, D) == std::set<NodeAddress>{K, M} &&
+                    net.inter(S).table().find(T, 0.0) != nullptr,
+                "D still sends to K and M, and S gets its route");
+    }
+    {
+        // With the switch off, (b) alone: the relay passes every copy.
+        Config cfg;
+        cfg.queryDetection = false;
+        Net net = fig41(1, cfg);
+        net.inject(C, externalAnt(S, T, 50, {S}, D), S);
+        const Outcome fromD = net.inject(C, externalAnt(S, T, 50, {S, D}, A), D);
+        c.check(fromD.decisions.size() == 1 && fromD.decisions[0].action == RouteAction::Unicast,
+                "queryDetection = false: no early termination");
+        net.inject(D, externalAnt(S, T, 60, {S, M}, C), I);
+        const std::size_t before = net.ants.size();
+        net.inject(D, externalAnt(S, T, 60, {S}, D), C);
+        c.check(targetsSentBy(net, D, before) == std::set<NodeAddress>{K, M},
+                "and a peripheral node that relayed the query still bordercasts it");
+    }
+    {
+        // Bounded (org rule 7): the detection table keeps historyCapacity
+        // queries, oldest first.
+        Config cfg;
+        cfg.historyCapacity = 2;
+        Net net = fig41(1, cfg);
+        net.inject(C, externalAnt(S, T, 70, {S}, D), S);
+        net.inject(C, externalAnt(S, T, 71, {S}, D), S);
+        net.inject(C, externalAnt(S, T, 72, {S}, D), S);
+        const Outcome forgotten = net.inject(C, externalAnt(S, T, 70, {S, D}, A), D);
+        c.check(forgotten.decisions.size() == 1 &&
+                    forgotten.decisions[0].action == RouteAction::Unicast,
+                "the oldest query is forgotten past the capacity");
+        const Outcome kept = net.inject(C, externalAnt(S, T, 72, {S, D}, A), D);
+        c.check(kept.decisions.size() == 1 && kept.decisions[0].action == RouteAction::Drop,
+                "the newest is still detected");
+    }
+}
+
 void TestDiscoveryFig41(Checker& c) {
     // #5 (c), (d) pinned on Fig. 4.1.
     Net net = fig41();
@@ -221,22 +325,25 @@ void TestInterRtExpiry(Checker& c) {
 }
 
 void TestDiscoveryRetry(Checker& c) {
-    // The retry row pinned: at most one discovery per destination per 1 s.
+    // The retry row pinned: at most one discovery per destination per 3 s
+    // (#5 (o)).
+    const Time retry = Config{}.discoveryRetryInterval;
+    c.check(retry == 3.0, "the retry interval: 3 s");
     Net net = fig41();
     const NodeAddress nowhere = 99;
     const Outcome a = net.send(S, nowhere);
     c.check(a.decisions.size() == 5 && a.decisions.back().action == RouteAction::Queue,
             "four ants (one per peripheral node), then the packet waits");
     const std::uint32_t seq = net.intra(S).lastSeq();
-    net.clock().set(0.9);
+    net.clock().set(retry - 0.1);
     const Outcome b = net.send(S, nowhere);
     c.check(b.decisions.size() == 1 && b.decisions[0].action == RouteAction::Queue &&
                 net.intra(S).lastSeq() == seq,
-            "0.9 s later: no new discovery");
-    net.clock().set(1.0);
+            "2.9 s later: no new discovery");
+    net.clock().set(retry);
     const Outcome d = net.send(S, nowhere);
     c.check(d.decisions.size() == 5 && net.intra(S).lastSeq() == seq + 1,
-            "1 s later: a new generation");
+            "3 s later: a new generation");
     c.check(net.queued[S].size() == 3, "all three wait");
     c.check(net.inter(S).discover(S).empty(), "never a discovery for itself");
 
@@ -254,7 +361,7 @@ void TestDiscoveryRetry(Checker& c) {
     const std::uint32_t s1 = intra.lastSeq();
     z.discover(51);
     c.check(intra.lastSeq() == s1, "the discovery times are bounded: a full map starts none");
-    clock.set(1.0);
+    clock.set(retry);
     z.discover(51);
     c.check(intra.lastSeq() == s1 + 1, "until the old entry is past the interval");
 }
@@ -277,14 +384,18 @@ void TestZoneNodeMovesAway(Checker& c) {
     net.cut(2, 3);
     net.link(6, 3);  // node 3 moves: now 1-2-4-5-6-3, five hops from 1
 
-    net.clock().set(1.0);
-    net.period();
-    c.check(net.intra(1).table().minHops(3) == 2, "one period without its ants: still held");
-    net.clock().set(2.0);
+    const Config cfg;
+    for (int k = 1; k < cfg.allowedAntLoss; ++k) {
+        net.clock().set(k * cfg.internalAntPeriod);
+        net.period();
+        c.check(net.intra(1).table().minHops(3) == 2,
+                "fewer than 3 periods without its ants: still held");
+    }
+    net.clock().set(cfg.neighbourTimeout());
     net.period();
     c.check(!net.intra(1).table().minHops(3) && !has(net.intra(1).table().zone(), 3) &&
                 !has(net.intra(1).table().peripheral(2), 3),
-            "two periods without an ant: 3 is out of 1's zone and its peripheral "
+            "three periods without an ant: 3 is out of 1's zone and its peripheral "
             "set");
     c.check(net.intra(1).table().hasNeighbour(2) && net.intra(1).table().minHops(4) == 2,
             "the neighbour it was reached through, and the nodes still there, stay");
@@ -297,8 +408,8 @@ void TestZoneNodeMovesAway(Checker& c) {
     c.check(net.delivered.size() == 1 && net.delivered[0].first == 3,
             "and is delivered over the new path");
     int delivered = 0;
-    for (int t = 3; t <= 12; ++t) {
-        net.clock().set(t);
+    for (int t = 1; t <= 10; ++t) {
+        net.clock().set(cfg.neighbourTimeout() + t);
         net.period();
         net.delivered.clear();
         net.send(1, 3);

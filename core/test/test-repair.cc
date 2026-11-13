@@ -294,10 +294,11 @@ void TestRepairFailure(Checker& c) {
         net.send(S, T);
         net.cut(S, C);
         net.ants.clear();
-        net.advance(1.0);  // past the discovery retry interval
+        const Time retry = Config{}.discoveryRetryInterval;
+        net.advance(retry);  // past the discovery retry interval
         const std::uint32_t seq = net.intra(S).lastSeq();
         net.send(S, T);
-        c.check(!net.inter(S).table().find(T, 1.0) && net.queued[S].size() == 1 &&
+        c.check(!net.inter(S).table().find(T, retry) && net.queued[S].size() == 1 &&
                     net.intra(S).lastSeq() == seq + 1,
                 "S drops its record through C, discovers again and holds the packet");
         c.check(net.antsOf(AntType::Notification).empty() && net.antsOf(AntType::Error).empty() &&
