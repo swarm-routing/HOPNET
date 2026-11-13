@@ -220,7 +220,7 @@ anchor tests that reconstruction; say so wherever its numbers appear.
 
 ## Anchor candidate
 
-Accepted as the anchor (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). AntHocNet is pinned at the v2.7.0 release commit, stated with each run once v2.7.0 ships (maintainer decision 2026-11-13, [#28](https://github.com/swarm-routing/HOPNET/issues/28)).
+Accepted as the anchor (maintainer decision 2026-11-10, [#4](https://github.com/swarm-routing/HOPNET/issues/4)). AntHocNet will be pinned at the v2.7.0 release commit once v2.7.0 ships, and each run states that commit (maintainer decision 2026-11-13, [#28](https://github.com/swarm-routing/HOPNET/issues/28)).
 
 | Trend | Scenario | Metric | Comparators | Source |
 |---|---|---|---|---|
