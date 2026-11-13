@@ -34,6 +34,15 @@ Outcome one(Decision d) {
     return out;
 }
 
+/// The bordercaster a copy of an external forward ant was sent from: the Path
+/// node before its target when the target is on Path (an ant following a
+/// cached InterRT route, #5 (h)), else Path's last node.
+NodeAddress previousBordercaster(const Ant& ant) {
+    const long at = indexOf(ant.path, ant.target);
+    if (at > 0) return ant.path.hops()[static_cast<std::size_t>(at) - 1].node;
+    return ant.path.empty() ? kInvalidAddress : ant.path.back().node;
+}
+
 }  // namespace
 
 InterZone::InterZone(const Config& config, IntraZone& intra, const IClock& clock,
@@ -169,6 +178,7 @@ std::vector<Decision> InterZone::discoverInner(NodeAddress dest) {
             .hops = 0,  // blank: no hop limit, [W07] p. 25
             .time = 0.0,
             .path = VisitedPath(config_.maxPathLength)};
+    detect(ant, self);  // the source's own query (#5 (q))
     // With no peripheral node to send to, bordercast() says Drop: the fate of
     // a received ant. Nothing was received here, so the caller gets no
     // decision, and a data packet waiting for the route is not mistaken for it.
@@ -241,7 +251,12 @@ Outcome InterZone::onExternalForward(const Ant& ant, NodeAddress from) {
     intra_.heard(from);
     const NodeAddress self = intra_.self();
     if (self == ant.destination) return atDestination(ant);
-    if (self != ant.target) return one(relay(ant, false));  // a transit relay
+    if (self != ant.target) {  // a transit relay
+        // Early termination (#5 (q)): a query this node already carried for
+        // another bordercaster ends here; one bordercast's branches go on.
+        if (!detect(ant, previousBordercaster(ant))) return one(Decision::drop());
+        return one(relay(ant, false));
+    }
     return atBordercaster(ant, from);
 }
 
@@ -249,6 +264,10 @@ Outcome InterZone::atBordercaster(const Ant& ant, NodeAddress from) {
     const NodeAddress self = intra_.self();
     const NodeAddress dest = ant.destination;
     const long at = indexOf(ant.path, self);
+    // Query detection (#5 (q)): at the origin of a query (a repair ant) this
+    // node is its bordercaster; a node that detected the query from another
+    // bordercaster is covered and does not bordercast it (below).
+    const bool covered = !detect(ant, from == kInvalidAddress ? self : previousBordercaster(ant));
     if (at >= 0) {  // a node of a cached InterRT route the ant follows (below)
         Ant next = ant;
         next.target = static_cast<std::size_t>(at) + 1 < ant.path.size()
@@ -286,6 +305,7 @@ Outcome InterZone::atBordercaster(const Ant& ant, NodeAddress from) {
             }
         }
     }
+    if (covered) return one(Decision::drop());  // its zone is covered (#5 (q))
     return Outcome{bordercast(ant, from), kInvalidAddress};
 }
 
@@ -344,6 +364,20 @@ Outcome InterZone::onExternalBackward(const Ant& ant, NodeAddress from) {
     Ant next = ant;
     next.target = hops[static_cast<std::size_t>(at) - 1].node;
     return one(relay(std::move(next), false));
+}
+
+bool InterZone::detect(const Ant& ant, NodeAddress prev) {
+    if (!config_.queryDetection) return true;
+    const std::pair<NodeAddress, std::uint32_t> key{ant.source, ant.seq};
+    if (const auto it = detected_.find(key); it != detected_.end()) return it->second == prev;
+    if (detected_.size() >= config_.historyCapacity && !detectedOrder_.empty()) {
+        detected_.erase(detectedOrder_.front());  // bounded, oldest query first (org rule 7)
+        detectedOrder_.pop_front();
+    }
+    if (config_.historyCapacity == 0) return true;
+    detected_.emplace(key, prev);
+    detectedOrder_.push_back(key);
+    return true;
 }
 
 bool InterZone::acceptGeneration(NodeAddress source, std::uint32_t seq) {

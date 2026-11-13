@@ -89,6 +89,15 @@ struct Config {
     std::size_t repairBufferCapacity = 64;
     Time repairBufferTimeout = 3.0;
 
+    /// Query control of route discovery: (b)'s skip rule (fidelity "Query
+    /// control"), plus, when true, ZRP's query detection and early
+    /// termination (#5 (q), maintainer decision 2026-11-13): every node that
+    /// handles an external forward ant records its query with the bordercaster
+    /// the first copy came from; a transit relay drops a copy from another
+    /// bordercaster, and a peripheral node so covered does not bordercast.
+    /// false = (b) alone, for an A/B against it.
+    bool queryDetection = true;
+
     /// Hops an external ant or a data packet may travel in all, bordercasters
     /// and transit relays alike: the Path cap's 100, which is what AntHocNet's
     /// maxPathLength bounds (every hop). Fidelity "Hops an external ant or a
