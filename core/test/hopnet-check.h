@@ -105,6 +105,8 @@ void TestDestinationGenerations(Checker& c);
 void TestInterRtTable(Checker& c);
 void TestInterRtExpiry(Checker& c);
 void TestDiscoveryRetry(Checker& c);
+void TestZoneNodeMovesAway(Checker& c);
+void TestZoneNodeStays(Checker& c);
 void TestDataSendFailure(Checker& c);
 void TestInterRtHitAtPeripheral(Checker& c);
 void TestTravelledBound(Checker& c);
@@ -150,6 +152,8 @@ inline const std::vector<NamedTest>& AllTests() {
         {"interrt-table", TestInterRtTable},
         {"interrt-expiry", TestInterRtExpiry},
         {"discovery-retry", TestDiscoveryRetry},
+        {"zone-node-moves-away", TestZoneNodeMovesAway},
+        {"zone-node-stays", TestZoneNodeStays},
         {"data-send-failure", TestDataSendFailure},
         {"interrt-hit-at-peripheral", TestInterRtHitAtPeripheral},
         {"travelled-bound", TestTravelledBound},

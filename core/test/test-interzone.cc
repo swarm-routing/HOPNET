@@ -9,6 +9,8 @@
 // determinism.
 #include "hopnet-net.h"
 
+#include <algorithm>
+
 namespace hopnet::core::test {
 
 void TestBordercastFig41(Checker& c) {
@@ -255,6 +257,89 @@ void TestDiscoveryRetry(Checker& c) {
     clock.set(1.0);
     z.discover(51);
     c.check(intra.lastSeq() == s1 + 1, "until the old entry is past the interval");
+}
+
+void TestZoneNodeMovesAway(Checker& c) {
+    // #93, the stale-entry row: a zone node that moved out of the zone, while
+    // the neighbour it was reached through stays, leaves the IntraRT after
+    // Config::neighbourTimeout() without an ant; its data then starts a route
+    // discovery and is delivered over the new path.
+    Net net;
+    for (auto [a, b] :
+         std::vector<std::pair<NodeAddress, NodeAddress>>{{1, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 6}})
+        net.link(a, b);
+    net.period();
+    const auto has = [](const std::vector<NodeAddress>& v, NodeAddress n) {
+        return std::find(v.begin(), v.end(), n) != v.end();
+    };
+    c.check(net.intra(1).table().minHops(3) == 2 && has(net.intra(1).table().peripheral(2), 3),
+            "before the move: 3 is a peripheral node of 1, through 2");
+    net.cut(2, 3);
+    net.link(6, 3);  // node 3 moves: now 1-2-4-5-6-3, five hops from 1
+
+    net.clock().set(1.0);
+    net.period();
+    c.check(net.intra(1).table().minHops(3) == 2, "one period without its ants: still held");
+    net.clock().set(2.0);
+    net.period();
+    c.check(!net.intra(1).table().minHops(3) && !has(net.intra(1).table().zone(), 3) &&
+                !has(net.intra(1).table().peripheral(2), 3),
+            "two periods without an ant: 3 is out of 1's zone and its peripheral "
+            "set");
+    c.check(net.intra(1).table().hasNeighbour(2) && net.intra(1).table().minHops(4) == 2,
+            "the neighbour it was reached through, and the nodes still there, stay");
+    c.check(!net.intra(4).table().minHops(3), "and out of 4's zone, which also held it through 2");
+
+    net.send(1, 3);
+    c.check(!net.antsOf(AntType::ExternalForward).empty() &&
+                net.antsOf(AntType::ExternalForward)[0].from == 1,
+            "a packet for it now starts a route discovery at 1");
+    c.check(net.delivered.size() == 1 && net.delivered[0].first == 3,
+            "and is delivered over the new path");
+    int delivered = 0;
+    for (int t = 3; t <= 12; ++t) {
+        net.clock().set(t);
+        net.period();
+        net.delivered.clear();
+        net.send(1, 3);
+        delivered += static_cast<int>(net.delivered.size());
+    }
+    c.check(delivered == 10, "every later packet is delivered (10 of 10)");
+}
+
+void TestZoneNodeStays(Checker& c) {
+    // The stale-entry row's other side: a zone node that stays reachable is
+    // refreshed every period, so it is never removed, at any phase of the
+    // timer against the timeout.
+    Net net = fig41();
+    std::vector<std::vector<NodeAddress>> zones;
+    std::size_t cells = 0;
+    for (NodeAddress v = S; v <= T; ++v) {
+        zones.push_back(net.intra(v).table().zone());
+        cells += net.intra(v).table().size();
+    }
+    bool same = true;
+    for (int t = 1; t <= 10 && same; ++t) {
+        net.clock().set(t);
+        net.period();
+        std::size_t now = 0;
+        for (NodeAddress v = S; v <= T; ++v) {
+            same = same && net.intra(v).table().zone() == zones[v - S];
+            now += net.intra(v).table().size();
+        }
+        same = same && now == cells;
+        // Between two timers, at the timeout boundary of the cells refreshed
+        // one period ago and of those refreshed in this one: nothing goes.
+        net.clock().set(t + 0.999);
+        for (NodeAddress v = S; v <= T; ++v) {
+            net.intra(v).purgeStaleNeighbours();
+            same = same && net.intra(v).table().zone() == zones[v - S];
+        }
+    }
+    c.check(same, "ten periods on a fixed graph: every zone and every cell as "
+                  "after the first");
+    net.send(S, D);
+    c.check(net.ants.empty() && net.delivered.size() == 1, "in-zone data still needs no ant");
 }
 
 void TestDataSendFailure(Checker& c) {
