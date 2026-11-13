@@ -54,7 +54,7 @@ jobs:
       determinism: hopnet-example --seed={seed}
       dual-roots: 'core/'
       core-roots: 'core/'
-      core-deps: swarm-routing/ns3-swarm-core@0919dbfe4a48495a2eda32335a1be6fae453c87c:core
+      core-deps: swarm-routing/ns3-swarm-core@360ceef5e21821e86f9f18c3e199fb5f731b8356:core
 
   # The coverage report of the `ci` job to Codecov (report-only; GitHub OIDC).
   codecov:
