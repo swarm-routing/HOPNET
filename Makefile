@@ -65,7 +65,7 @@ check: lint test headers org-sync-check ## everything CI gates on
 ci: check ## exactly what CI runs
 
 core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
-	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure
+	cmake -S core -B build/core -DSWARM_CORE_REF=$(SWARM_CORE_REF) && cmake --build build/core && ctest --test-dir build/core --output-on-failure
 
 # The release asset for swarm-routing/.github's reusable-release.yml, which sets
 # RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
