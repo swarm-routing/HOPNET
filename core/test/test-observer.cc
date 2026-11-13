@@ -332,10 +332,12 @@ void TestObserverRoutesAndState(Checker& c) {
     {
         Recorder rec;
         IntraZoneTable t(2, 0.2, &rec);
-        c.check(t.update(7, 3, 1.0, 1, 1) && t.update(7, 3, 1.0, 1, 2) && rec.routes.size() == 1,
+        c.check(t.update(7, 3, 1.0, 1, 1, 0.0) && t.update(7, 3, 1.0, 1, 2, 0.0) &&
+                    rec.routes.size() == 1,
                 "a deposit into an existing cell is no route event");
-        c.check(t.update(7, 4, 1.0, 2, 1) && rec.routes.size() == 2, "a new cell");
-        c.check(!t.update(8, 4, 1.0, 1, 1) && rec.routes.size() == 2, "a full table adds none");
+        c.check(t.update(7, 4, 1.0, 2, 1, 0.0) && rec.routes.size() == 2, "a new cell");
+        c.check(!t.update(8, 4, 1.0, 1, 1, 0.0) && rec.routes.size() == 2,
+                "a full table adds none");
         c.check(t.removeNeighbour(3) == 1 && rec.routes.size() == 3 && !rec.routes[2].added,
                 "a removed row");
     }

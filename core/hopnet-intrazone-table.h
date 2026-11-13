@@ -6,7 +6,9 @@
 // <pheromone, times visited, hops, SeqNo>. The pheromone lives in swarm-core's
 // PheromoneTable (destination = column, neighbour = row), so next-hop
 // selection is swarm-core's selectNextHop; the other three fields sit beside
-// it under the same key and the same cap (org rule 7).
+// it under the same key and the same cap (org rule 7), with the time of the
+// cell's last ant update, which the stale-entry rule reads (fidelity,
+// stale IntraRT entry row; #93).
 //
 // Ordered maps throughout, so every enumeration is deterministic (org rule 5).
 #ifndef HOPNET_CORE_INTRAZONE_TABLE_H
@@ -27,6 +29,7 @@ namespace hopnet::core {
 
 using swarm::core::NodeAddress;
 using swarm::core::PheromoneTable;
+using swarm::core::Time;
 
 /// One IntraRT cell.
 struct Cell {
@@ -38,6 +41,9 @@ struct Cell {
     int hops = 0;
     /// The last ant generation that updated the cell ([W07] p. 25).
     std::uint32_t seq = 0;
+    /// When an ant last updated the cell (eq. 4.1 or 4.3). Not a field of
+    /// [W07]: the stale-entry rule's (fidelity, stale IntraRT entry row).
+    Time refreshed = 0.0;
 
     bool operator==(const Cell&) const = default;
 };
@@ -51,20 +57,27 @@ public:
     IntraZoneTable(std::size_t capacity, double evaporation,
                    swarm::core::IRouterObserver* observer = nullptr);
 
-    /// One ant update of cell (neighbour, column): unless the cell already
-    /// holds `seq`, adds `deposit` to its pheromone (eq. 4.1 or 4.3), sets its
-    /// hops and seq, counts the visit, and multiplies every other neighbour's
-    /// pheromone in the same column by (1 - E) (eq. 4.2). A cell is created by
-    /// its first deposit (fidelity "Initial pheromone": none). Returns false,
-    /// changing nothing, on a repeated seq, a deposit that is not finite and
-    /// positive, or a new cell in a full table.
+    /// One ant update of cell (neighbour, column) at time `now`: unless the
+    /// cell already holds `seq`, adds `deposit` to its pheromone (eq. 4.1 or
+    /// 4.3), sets its hops and seq, counts the visit, marks it refreshed at
+    /// `now`, and multiplies every other neighbour's pheromone in the same
+    /// column by (1 - E) (eq. 4.2). A cell is created by its first deposit
+    /// (fidelity "Initial pheromone": none). Returns false, changing nothing,
+    /// on a repeated seq, a deposit that is not finite and positive, or a new
+    /// cell in a full table.
     bool update(NodeAddress column, NodeAddress neighbour, double deposit, int hops,
-                std::uint32_t seq);
+                std::uint32_t seq, Time now);
 
     std::optional<Cell> cell(NodeAddress column, NodeAddress neighbour) const;
 
     /// Removes the neighbour's row (a lost link); returns how many cells.
     std::size_t removeNeighbour(NodeAddress neighbour);
+
+    /// Removes every cell no ant has updated for `timeout` (now - refreshed >=
+    /// timeout): a zone node no longer reachable through that neighbour
+    /// (fidelity, stale IntraRT entry row). Each is reported as a route
+    /// removal, in key order. Returns how many cells.
+    std::size_t removeStale(Time now, Time timeout);
 
     /// The rows: neighbours holding at least one cell, ascending.
     std::vector<NodeAddress> neighbours() const;

@@ -117,18 +117,19 @@ Ant forwardAnt(NodeAddress source, NodeAddress from, std::uint32_t seq, double t
 
 void TestTableUpdate(Checker& c) {
     IntraZoneTable t(3, 0.2);
-    c.check(t.update(9, 1, 10.0, 2, 5), "a first deposit creates the cell");
-    c.check(!t.update(9, 1, 10.0, 2, 5), "the same SeqNo does not update a cell twice");
-    c.check(t.update(9, 2, 4.0, 1, 5), "the same SeqNo updates another cell");
+    c.check(t.update(9, 1, 10.0, 2, 5, 0.0), "a first deposit creates the cell");
+    c.check(!t.update(9, 1, 10.0, 2, 5, 1.0), "the same SeqNo does not update a cell twice");
+    c.check(t.update(9, 2, 4.0, 1, 5, 0.0), "the same SeqNo updates another cell");
     c.near(t.cell(9, 1)->pheromone, 8.0, "eq. 4.2: the other neighbour's cell keeps 1 - E");
     c.near(t.cell(9, 2)->pheromone, 4.0, "the deposited cell does not decay");
-    c.check(t.update(9, 1, 1.0, 3, 6), "a newer SeqNo updates");
+    c.check(t.update(9, 1, 1.0, 3, 6, 0.5), "a newer SeqNo updates");
     c.check(t.cell(9, 1)->visits == 2 && t.cell(9, 1)->hops == 3 && t.cell(9, 1)->seq == 6,
             "visits counted, hops and SeqNo replaced");
     c.near(t.cell(9, 2)->pheromone, 3.2, "decay again");
-    c.check(!t.update(9, 3, 0.0, 1, 1) && !t.update(9, 3, -1.0, 1, 1), "no zero/negative deposit");
-    c.check(t.update(8, 2, 1.0, 2, 1), "third cell");
-    c.check(!t.update(7, 1, 1.0, 1, 1) && t.size() == 3, "a full table refuses a new cell");
+    c.check(!t.update(9, 3, 0.0, 1, 1, 0.5) && !t.update(9, 3, -1.0, 1, 1, 0.5),
+            "no zero/negative deposit");
+    c.check(t.update(8, 2, 1.0, 2, 1, 0.5), "third cell");
+    c.check(!t.update(7, 1, 1.0, 1, 1, 0.5) && t.size() == 3, "a full table refuses a new cell");
     c.check(t.zone() == std::vector<NodeAddress>{8, 9}, "columns");
     c.check(t.neighbours() == std::vector<NodeAddress>{1, 2}, "rows");
     c.check(t.minHops(9) == 1 && !t.minHops(5), "minimum hops over the column");
@@ -137,6 +138,22 @@ void TestTableUpdate(Checker& c) {
     c.check(t.removeNeighbour(2) == 2 && t.neighbours() == std::vector<NodeAddress>{1},
             "a lost neighbour's row goes");
     c.check(t.zone() == std::vector<NodeAddress>{9}, "and the columns only it held");
+
+    // The stale-entry row (#93): a cell no ant updated for the timeout goes.
+    IntraZoneTable s(3, 0.2);
+    s.update(9, 2, 4.0, 1, 5, 0.0);
+    s.update(9, 1, 1.0, 3, 6, 0.5);
+    s.update(8, 2, 1.0, 2, 1, 0.5);
+    c.check(!s.update(9, 2, 4.0, 1, 5, 1.0) && s.cell(9, 2)->refreshed == 0.0 &&
+                s.cell(9, 1)->refreshed == 0.5,
+            "refreshed: the time of the last update, not of a repeated SeqNo");
+    c.check(s.removeStale(1.9, 2.0) == 0 && s.size() == 3, "no cell is 2 s old at 1.9 s");
+    c.check(s.removeStale(2.0, 2.0) == 1 && !s.cell(9, 2) && s.cell(9, 1) && s.cell(8, 2),
+            "at 2.0 s the cell last updated at 0 s goes; its row and its column stay");
+    c.check(s.pheromone().size() == 2 && s.minHops(9) == 3, "the pheromone goes with it");
+    c.check(s.update(7, 1, 1.0, 1, 1, 2.0), "and the freed slot takes a new cell");
+    c.check(s.removeStale(2.5, 2.0) == 2 && s.zone() == std::vector<NodeAddress>{7},
+            "a column whose last cell goes leaves the zone");
 }
 
 void TestEdgeTime(Checker& c) {

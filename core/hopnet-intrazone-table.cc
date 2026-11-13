@@ -13,7 +13,7 @@ IntraZoneTable::IntraZoneTable(std::size_t capacity, double evaporation,
     : pheromone_(capacity), retain_(1.0 - evaporation), observer_(observer) {}
 
 bool IntraZoneTable::update(NodeAddress column, NodeAddress neighbour, double deposit, int hops,
-                            std::uint32_t seq) {
+                            std::uint32_t seq, Time now) {
     if (!std::isfinite(deposit) || deposit <= 0.0) return false;
     const Key key{column, neighbour};
     auto it = meta_.find(key);
@@ -23,6 +23,7 @@ bool IntraZoneTable::update(NodeAddress column, NodeAddress neighbour, double de
     Cell& c = meta_[key];
     c.hops = hops;
     c.seq = seq;
+    c.refreshed = now;
     ++c.visits;
     for (const auto& e : pheromone_.entries(column)) {  // eq. 4.2
         if (e.neighbor != neighbour) pheromone_.set(column, e.neighbor, e.value * retain_);
@@ -46,6 +47,15 @@ std::size_t IntraZoneTable::removeNeighbour(NodeAddress neighbour) {
         return true;
     });
     return pheromone_.eraseNeighbor(neighbour);
+}
+
+std::size_t IntraZoneTable::removeStale(Time now, Time timeout) {
+    return std::erase_if(meta_, [&](const auto& kv) {
+        if (now - kv.second.refreshed < timeout) return false;
+        pheromone_.erase(kv.first.first, kv.first.second);
+        if (observer_) observer_->onRouteChanged(kv.first.first, kv.first.second, false);
+        return true;
+    });
 }
 
 std::vector<NodeAddress> IntraZoneTable::neighbours() const {
