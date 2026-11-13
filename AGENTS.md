@@ -7,7 +7,7 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11; the ns-3 module and the gates are not. The ns-3 module waits until ARA's builds green against swarm-core (maintainer decision 2026-11-10, #3).** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
+**Status: `core/` in progress (#5; started by the maintainer's decision of 2026-11-10): the intra-zone half, the inter-zone discovery and forwarding, and §4.3's local repair (repair, notification and error ants; readings (i)–(l) accepted 2026-11-11) are written; the local repair at a transit relay follows reading (m), accepted 2026-11-11. The ns-3 module `hopnet` carries them out on swarm-core's `SwarmRoutingBase` (#5; it waited until ARA's built green against swarm-core, maintainer decision 2026-11-10, #3, met on ARA's `main`); the gates (delivery smoke at ≥ 20 seeds, the anchor against AntHocNet, #28) are not run yet.** `docs/fidelity.md` (#4) and the accepted pre-registration on #5 govern every reading. Directories marked (planned) do not exist yet: update this file in the PR that creates each.
 
 HOPNET (Wang, 2007 MSc thesis, University of Manitoba) as a standalone hexagonal protocol: ant-colony routing combined with zone routing, where ants hop between routing zones (proactive inside a zone, reactive between zones). It is the one published result found that benchmarks against AntHocNet directly, claiming better scaling. A simulator-agnostic `core/` and an ns-3 `ns3/` adapter (contrib module `hopnet`) linking against `swarm-core`. There is no AntHocNet arm to promote: it is written from the thesis.
 
@@ -19,14 +19,21 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             hopnet-data (the data header + wire codec), hopnet-observe.h (what the core reports to swarm-core's
             `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
             test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: SWARM_CORE_REF in core/CMakeLists.txt)
-ns3/        (planned) contrib module `hopnet` (GPL-2.0-only): adapter, helper, examples, test suite
-            (pass `&Observer()` to IntraZone and InterZone, register `kindNames()` once: #40)
+ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-core:
+  model/hopnet-header.*            the ant payload and the DataHeader right after each data packet's UDP header (core/'s codecs)
+  model/hopnet-routing-protocol.*  the adapter: IntraZone + InterZone per node on SwarmRoutingBase (`&Observer()` to both, `kindNames()`
+                                   registered once, #40); RouteInput takes every data packet; holds the packets the core queues
+  helper/hopnet-helper.*           HopnetHelper (swarm-core's SwarmRoutingHelper; the WifiLinkMonitor gives the edge time)
+  helper/hopnet-bench-arms.cc      the `hopnet` arm of ns3-tools' routing-compare (built only beside routing-bench)
+  examples/hopnet-example.cc       a small RWP MANET; CI's determinism program
+  test/hopnet-test-suite.cc        `test.py -s hopnet`: the core tests, both readers' roundtrip and fuzz, a 4-node chain across zones,
+                                   determinism, the observer's trace sources identical with and without
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
 ```
 
 ## Build & verify
 
-CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, again under ASan + UBSan; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks. [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) joins once `ns3/` exists (as in ARA and BeeAdHoc), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@main`. Locally:
+CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, again under ASan + UBSan; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks, and `.github/workflows/ns3.yml`: [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) builds `ns3/` in `ns3-dev:latest-{debug,sanitized}` with strict warnings and coverage (Sonar off until the repository has a project, swarm-routing/.github#104), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@main` and `routing-bench=swarm-routing/ns3-tools@main:ns3/routing-bench`, runs `test.py -s hopnet`, `routing-compare --scenario=paper --nNodes=20 --time=30 --runs=1 --protocols=hopnet` as the delivery smoke and `hopnet-example --seed={seed}` as the determinism program. Locally:
 
 ```bash
 make core-test   # core/ alone: cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
@@ -34,9 +41,10 @@ cmake -S core -B build/sanitized -DHOPNET_CORE_SANITIZE=ON && cmake --build buil
 cmake -S core -B build/local -DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core   # a local swarm-core instead of the pin
 make help    # the org's standard target names: build, test, lint, format, check, clean, shell, ci
 make check   # everything CI gates on
+make test    # core-test, then the ns-3 module in ns3-dev:latest-debug (SWARM_CORE_NS3=<checkout>, default ../ns3-swarm-core):
 docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swarm-core:ro" \
     ghcr.io/swarm-routing/ns3-dev:latest-debug \
-    ns3-build-contrib --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
+    ns3-build-contrib --strict-warnings --quality-modules hopnet --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
 ```
 
 ## Golden rules (invariants — do not break)

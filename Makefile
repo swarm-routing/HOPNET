@@ -17,6 +17,10 @@ ORG_REF   ?= main
 # swarm-core's core/ at the commit core/CMakeLists.txt pins (SWARM_CORE_REF), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
 SWARM_CORE_REF ?= 501dd7eca8c530dadaeb5d43c66e9c31d19fd8f5
+# A checkout of swarm-routing/ns3-swarm-core (its main, as ns3.yml) for the ns-3 build.
+SWARM_CORE_NS3 ?= $(CURDIR)/../ns3-swarm-core
+NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_CORE_NS3):/src/ns3-swarm-core:ro" $(NS3_IMAGE) \
+	ns3-build-contrib --strict-warnings --quality-modules hopnet
 
 .DEFAULT_GOAL := help
 .PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core dist
@@ -25,10 +29,10 @@ help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build: ## build what this repo ships
-	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib hopnet=/src/ns3; else echo "make build: no ns3/ module yet"; fi
+	$(NS3_RUN) swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
 
 test: core-test ## the fast tests CI runs on every PR
-	if [ -d ns3 ]; then docker run --rm -v "$(CURDIR):/src:ro" $(NS3_IMAGE) ns3-build-contrib --test hopnet=/src/ns3; else echo "make test: no ns3/ module yet"; fi
+	$(NS3_RUN) --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
 
 # The org .clang-format unless this repo ships its own, as CI's format check.
 CLANG_STYLE = $(if $(wildcard .clang-format),file,file:$(ORG_DIR)/.clang-format)
