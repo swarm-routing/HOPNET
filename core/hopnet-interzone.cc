@@ -252,9 +252,14 @@ Outcome InterZone::onExternalForward(const Ant& ant, NodeAddress from) {
     const NodeAddress self = intra_.self();
     if (self == ant.destination) return atDestination(ant);
     if (self != ant.target) {  // a transit relay
-        // Early termination (#5 (q)): a query this node already carried for
-        // another bordercaster ends here; one bordercast's branches go on.
-        if (!detect(ant, previousBordercaster(ant))) return one(Decision::drop());
+        // Early termination (#5 (q)): a bordercast copy of a query this node
+        // already carried for another bordercaster ends here; one bordercast's
+        // branches go on. A copy directed at the destination (found in a
+        // zone, [W07] p. 27) or following a cached InterRT route (#5 (h)) is
+        // not a bordercast and always goes on (BRP: a node that knows the
+        // route forwards the query to the destination).
+        const bool directed = ant.target == ant.destination || indexOf(ant.path, ant.target) >= 0;
+        if (!directed && !detect(ant, previousBordercaster(ant))) return one(Decision::drop());
         return one(relay(ant, false));
     }
     return atBordercaster(ant, from);

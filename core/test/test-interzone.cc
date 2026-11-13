@@ -103,6 +103,19 @@ void TestQueryDetection(Checker& c) {
         const Outcome other = net.inject(C, externalAnt(S, T, 51, {S, D}, A), D);
         c.check(other.decisions.size() == 1 && other.decisions[0].action == RouteAction::Unicast,
                 "another query (S, 51) is not affected");
+        // Directed copies are not bordercasts: they always pass.
+        net.inject(C, externalAnt(S, A, 52, {S}, D), S);
+        const Outcome toDest = net.inject(C, externalAnt(S, A, 52, {S, D}, A), D);
+        c.check(toDest.decisions.size() == 1 &&
+                    toDest.decisions[0].action == RouteAction::Unicast &&
+                    toDest.decisions[0].nextHop == A,
+                "a copy sent to the destination itself passes C");
+        net.inject(C, externalAnt(S, T, 53, {S}, D), S);
+        const Outcome cached = net.inject(C, externalAnt(S, T, 53, {S, D, A}, A), D);
+        c.check(cached.decisions.size() == 1 &&
+                    cached.decisions[0].action == RouteAction::Unicast &&
+                    cached.decisions[0].nextHop == A,
+                "and so does a copy following a cached InterRT route (target on Path)");
     }
     {
         // A covered peripheral node does not bordercast: D relayed (S, 60)
