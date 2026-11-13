@@ -1,0 +1,63 @@
+# The anchor pilot (#5): before the ~54 runner-hour anchor, 5 paired seeds at
+# the anchor's two gated scaling factors, s = 1 and s = 2, HOPNET and AntHocNet
+# in one invocation per seed. One s = 1 seed of `hopnet` delivered 56 % against
+# the thesis's about 0.97 at factor 1 ([W07] Fig. 5.11; docs/fidelity.md "The
+# headline trend"), so the pilot checks the reconstruction before the anchor
+# spends its runner-hours. It is not the anchor and gates nothing in it.
+#
+# Pre-registered on #5 before any dispatch, with the read and the go/no-go
+# rule (the comment on #5 that links this plan's PR). A later run is a new plan, never an edit of this one.
+#
+# Scenario: docs/fidelity.md "Anchor candidate" ([DDG04] §4.2's scaling
+# experiment, which [W07] reuses): s = 1 is 50 nodes in 1500 m x 500 m, s = 2
+# is 200 nodes in 3000 m x 1000 m; random waypoint up to 20 m/s (routing-bench's
+# default floor of 1 m/s), pause 30 s, 900 s, 20 CBR flows of one 64-byte packet
+# per second (512 bit/s, `--scenario=paper`'s default), 802.11 at 2 Mbit/s,
+# 300 m disk range.
+#
+# Comparator: AntHocNet's ns-3 module at the commit benchmark-cell.yml pins,
+# with its defaults. The anchor pins AntHocNet's v2.7.0 release commit; v2.7.0
+# has not shipped (latest release v2.6.1), so the pilot runs AntHocNet main at
+# c3230ded and says so (the anchor does not reuse these cells).
+#
+# One arm: HOPNET and AntHocNet run in the same cell, not two commits.
+# `reference: anthocnet` (swarm-routing/ns3-tools#152) makes `verdicts` print
+# hopnet minus anthocnet, paired by seed, for every cell. Each seed is its own
+# job (blocks 1-5, --runs=1): an s = 2 HOPNET seed took about 55 min on one
+# core (#5), so a block stays well inside the 6 h job ceiling.
+#
+#   P=tools/bench/campaigns/pilot.yaml
+#   C="python3 ../ns3-tools/python/ns3_tool/campaign.py"   # or `ns3-campaign`
+#   $C plan $P                                      # 10 jobs; dispatches nothing
+#   $C dispatch $P --cap 4
+#   $C status $P --brief
+#   $C collect $P --out .campaign/pilot-1/cells
+#   grep -ho '\(swarm-core\|routing-bench\|anthocnet\)@[0-9a-f]*' .campaign/pilot-1/cells/*.txt | sort -u
+#                                                   # 3 lines: one dependency set in every cell
+#   $C verdicts $P --dir .campaign/pilot-1/cells    # hopnet - anthocnet per cell
+#   python3 ../ns3-tools/python/ns3_tool/bench_parse.py --all .campaign/pilot-1/cells/pilot-s1-pilot-1.txt   # per-arm PDR
+generation: pilot-1
+ref: main
+repo: swarm-routing/HOPNET
+source_sha: 59d9f561b8534c891e3b6adc0aa2e128827a63f2
+workflow: benchmark-cell.yml
+program: routing-compare
+# ns3-dev:3.48-optimized (fb7596b), the image the other protocols' smokes and
+# anchors run on.
+image: ghcr.io/swarm-routing/ns3-dev@sha256:5585a93c5cea1980592539e2d26a4e111e0ff4b0cc63b3dfd6ea5de459d80d3f
+cap: 4
+control: pilot
+reference: anthocnet
+
+arms:
+  pilot: ""
+
+x-field: &field "--scenario=paper --time=900 --speed=20 --pause=30 --range=300 --flows=20 --propagation=range --mobility=rwp --transport=udp --diag --runs=1 --protocols=hopnet,anthocnet"
+cells:
+  # s = 1: 50 nodes, 1500 m x 500 m
+  pilot-s1: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: *field, extraArgs: "--nNodes=50 --areaX=1500 --areaY=500"}, blocks: [1, 2, 3, 4, 5]}
+  # s = 2: 200 nodes, 3000 m x 1000 m
+  pilot-s2: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: *field, extraArgs: "--nNodes=200 --areaX=3000 --areaY=1000"}, blocks: [1, 2, 3, 4, 5]}
+
+jobs:
+  - {arms: [pilot], cells: "*"}
