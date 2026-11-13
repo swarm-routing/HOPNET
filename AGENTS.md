@@ -30,6 +30,8 @@ ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-cor
   test/hopnet-test-suite.cc        `test.py -s hopnet`: the core tests, both readers' roundtrip and fuzz, a 4-node chain across zones,
                                    determinism, the observer's trace sources identical with and without
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
+tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke against the base), pilot.yaml (the anchor's 5-seed pilot, #5)
+.github/workflows/benchmark-cell.yml   one benchmark cell at a pinned source_sha (reusable-benchmark-cell.yml, build mode); dispatched by ns3-campaign
 ```
 
 ## Build & verify
@@ -47,6 +49,45 @@ docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swa
     ghcr.io/swarm-routing/ns3-dev:latest-debug \
     ns3-build-contrib --strict-warnings --quality-modules hopnet --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
 ```
+
+Benchmarks (#28, swarm-routing/.github#156): change tests and the anchor
+run here, released versions in swarm-routing/benchmarks (its ADR-0002).
+`.github/workflows/benchmark-cell.yml` is a thin caller of
+swarm-routing/.github's `reusable-benchmark-cell.yml` in build mode: each cell
+checks out its `source_sha`, builds `hopnet` with swarm-core at
+`SWARM_CORE_REF`, routing-bench at a pinned ns3-tools commit and AntHocNet's
+ns-3 module (the anchor's comparator, golden rule 12: AntHocNet's v2.7.0
+release commit once it ships, `main`'s commit until then; `stage` copies its
+`core/` into the module, as its `make install-ns3` does) on the ns3-dev image
+given by digest, and runs `routing-compare`. Campaign plans live in
+`tools/bench/campaigns/` and run through `ns3-campaign` (swarm-routing/ns3-tools
+`python/ns3_tool/change_plan.py`; its docstring is the plan format).
+`smoke.yaml` is the change-test smoke: HOPNET at a PR's head against its base,
+two families (`grid-rwp`, `static-mesh`), 20 paired seeds. For a PR that
+changes `core/` or `ns3/`, copy it with a new `generation` and the PR's base
+and head commits in `pins`, then:
+
+```bash
+pip install pyyaml                                    # a YAML plan needs PyYAML
+C="python3 ../ns3-tools/python/ns3_tool/campaign.py"   # or ns3-campaign (pip install ../ns3-tools/python)
+$C plan P.yaml                                        # every job; dispatches nothing
+$C dispatch P.yaml --cap 4                            # resumable: re-run until every label is logged
+$C status P.yaml --brief                              # poll lightly (15 min)
+G=$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))["generation"])' P.yaml)
+$C collect P.yaml --out ".campaign/$G/cells"          # rejects a cell whose ##PROV## is not its pin
+grep -ho '\(swarm-core\|routing-bench\|anthocnet\)@[0-9a-f]*' ".campaign/$G/cells"/*.txt | sort -u   # must print 3 lines
+$C verdicts P.yaml --dir ".campaign/$G/cells"         # head minus base (or minus `reference`), paired 95 % CI per cell
+```
+
+and put the `verdicts` lines in the PR (no hand numbers, ns3-tools rule 13).
+`pilot.yaml` is a one-arm plan with `reference: anthocnet`: `verdicts` prints
+hopnet minus anthocnet per cell. The dependency commits come from
+`benchmark-cell.yml` at the dispatch ref (`main`), not from the plan, and
+`collect` checks only `source_sha` and the image: do not merge a change to
+that file's `dependencies` while a campaign is in flight, and the `grep`
+above (one commit per dependency across every cell) is the check that none
+did. State lives in `.campaign/<generation>/` (git-ignored); a cell's
+artifact is kept 7 days.
 
 ## Golden rules (invariants — do not break)
 

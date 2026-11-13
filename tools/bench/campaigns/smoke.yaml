@@ -1,0 +1,55 @@
+# The change-test smoke (#28): HOPNET at a PR's head against its base, paired
+# on identical seeds (org rule 6), in two families, 20 seeds each. Run it for
+# any PR that changes core/ or ns3/ and put the verdicts in the PR.
+#
+# The cells are swarm-routing/ns3-tools' two-arm smoke cells
+# (campaigns/anthocnet-aodv-smoke.toml: the paper grid under random waypoint,
+# and the near-static mesh at pause 300 s), with hopnet alone in the harness and
+# 20 seeds (1-20) in two jobs of 10 per cell (blocks: --firstRun=1 and 11; a
+# grid-rwp seed took 244 s on one core, #5, so 20 in one job would come close
+# to the 6 h job ceiling on a slower runner). Both arms run on ns3-dev
+# 3.48-optimized (fb7596b) by digest: ns-3's release profile, the image the
+# anchor runs on.
+#
+# For a PR: copy this plan, set `generation` to a new id and `pins` to the
+# PR's base and head commits, then (ns3-tools checked out next to this repo):
+#
+#   P=tools/bench/campaigns/smoke.yaml
+#   C="python3 ../ns3-tools/python/ns3_tool/campaign.py"   # or `ns3-campaign`
+#   $C plan $P                                      # 8 jobs; dispatches nothing
+#   $C dispatch $P --cap 4                          # re-run until all are dispatched
+#   $C status $P                                    # every 15 min or so
+#   G=$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))["generation"])' $P)
+#   $C collect $P --out ".campaign/$G/cells"
+#   grep -ho '\(swarm-core\|routing-bench\|anthocnet\)@[0-9a-f]*' ".campaign/$G/cells"/*.txt | sort -u
+#                                                   # 3 lines: one dependency set in every cell
+#   $C verdicts $P --dir ".campaign/$G/cells"
+#
+# `verdicts` prints the paired 95 % CI of head minus base per cell
+# (bench_parse --ab --proto hopnet). The pins below are the first pair: base
+# b373da2 (#85, the ns-3 module) and head 59d9f56 (main when this plan was
+# written: #98's input guards, #99's IntraRT neighbour timeout, the swarm-core
+# pin 6966421); dispatch it for #28's first acceptance box (about 5.4
+# runner-hours, #5).
+generation: smoke-59d9f56
+ref: main
+repo: swarm-routing/HOPNET
+workflow: benchmark-cell.yml
+program: routing-compare
+cap: 4
+control: base
+image: ghcr.io/swarm-routing/ns3-dev@sha256:5585a93c5cea1980592539e2d26a4e111e0ff4b0cc63b3dfd6ea5de459d80d3f
+pins:
+  base: {source_sha: b373da2370e852e3097eafec2b88996ef5e2a445}
+  head: {source_sha: 59d9f561b8534c891e3b6adc0aa2e128827a63f2}
+
+arms:
+  base: ""
+  head: ""
+
+cells:
+  grid-rwp: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: "--scenario=paper --nNodes=50 --time=300 --areaX=1500 --areaY=300 --speed=20 --pause=30 --range=300 --propagation=range --mobility=rwp --transport=udp --diag --runs=10 --protocols=hopnet"}, blocks: [1, 11]}
+  static-mesh: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: "--scenario=paper --nNodes=50 --time=300 --areaX=1500 --areaY=300 --speed=20 --pause=300 --range=300 --propagation=range --mobility=rwp --transport=udp --diag --runs=10 --protocols=hopnet"}, blocks: [1, 11]}
+
+jobs:
+  - {arms: [base, head], cells: "*"}
