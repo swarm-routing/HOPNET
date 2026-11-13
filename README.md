@@ -36,7 +36,7 @@ Each release also has its own **version DOI**, listed on [its Zenodo record](htt
 Please also cite the work it builds on:
 
 - D. H. Joppi, *ns3-swarm-core*, 2026, [doi:10.5281/zenodo.24138628](https://doi.org/10.5281/zenodo.24138628). The shared primitives core/ builds on (pinned by commit: SWARM_CORE_REF).
-- J. Wang, *HOPNET: a Hybrid ant colony OPtimization routing algorithm for mobile ad hoc NETwork*, University of Manitoba, 2008, <https://hdl.handle.net/1993/20935> (no DOI: none registered). The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices.
+- J. Wang, *HOPNET: a Hybrid ant colony OPtimization routing algorithm for mobile ad hoc NETwork*, University of Manitoba, 2008, <https://hdl.handle.net/1993/20935> (no DOI: none registered). The primary source this repository implements; docs/fidelity.md maps it to the code and marks the repository choices. Its title page is dated December 2007; the issued date in the University of Manitoba's MSpace record is 2008, the year given here.
 
 What this implementation reproduces from its sources, and every deliberate deviation, is in [docs/fidelity.md](docs/fidelity.md).
 
