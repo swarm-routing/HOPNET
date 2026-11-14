@@ -1,5 +1,7 @@
 # org-sync configuration (swarm-routing/.github tools/org-sync).
 kind = "protocol"
+# the C++ badge: core/'s standard, the one of the ns-3 release the org supports (swarm-routing/ns3-swarm-core#141)
+cxx = "23"
 # CITATION.cff seed and cite badge. Once Zenodo archives a release: set zenodo_concept = "<record id>"
 # (read from Zenodo), then `org_sync.py reseed CITATION.cff` so CITATION.cff names the DOI.
 citation = true
