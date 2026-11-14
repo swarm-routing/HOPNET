@@ -70,6 +70,15 @@ bool hasSegment(const std::vector<NodeAddress>& v, NodeAddress a, NodeAddress b)
     return false;
 }
 
+/// The routes these tests pin are the discoveries' without the
+/// query-processing delay (#5 (t)): with it, the bordercasters' race gives A
+/// another route (through S), as valid, that the expected ants do not follow.
+Config noWait() {
+    Config cfg;
+    cfg.queryProcessingDelay = 0.0;
+    return cfg;
+}
+
 }  // namespace
 
 void TestRepairSuccess(Checker& c) {
@@ -211,7 +220,7 @@ void TestRepairFailure(Checker& c) {
     // #5 (i), (l): T unreachable from M. After the wait (1 s, a transit M has
     // no estimate) each buffered source gets one error ant.
     {
-        Net net = fig41();
+        Net net = fig41(1, noWait());
         net.send(S, T);
         net.send(A, T);
         c.check(hasSegment(routeOf(net, A, T), M, U), "A's route via M, U too");
@@ -277,6 +286,9 @@ void TestRepairFailure(Checker& c) {
         c.check(o.repairFor == T && std::fabs(o.repairWait - 0.1) < 1e-12 &&
                     o.decisions.back().action == RouteAction::Queue && !z.table().find(T, 0.0),
                 "a 0.02 s estimate gives a 0.1 s wait, and the record through U goes");
+        c.check(o.querySource == kInvalidAddress && o.decisions.front().message &&
+                    o.decisions.front().message->target == R,
+                "the repair's own ant leaves at once: its origin never waits (#5 (t))");
         clock.set(0.05);
         c.check(z.onRepairTimeout(T).decisions.empty() && z.repairing(T),
                 "an early timer does nothing");
@@ -310,7 +322,7 @@ void TestRepairFailure(Checker& c) {
 void TestRepairSources(Checker& c) {
     // #5 (l): every distinct buffered source is told once; a source that
     // arrives after the success is re-routed by M's record and told nothing.
-    Net net = fig41();
+    Net net = fig41(1, noWait());
     net.send(S, T);
     net.send(A, T);
     net.send(F, T);

@@ -263,9 +263,10 @@ struct ChainRun {
     uint64_t txPackets = 0;
     uint32_t sent = 0;
     uint32_t received = 0;
-    std::map<int, uint64_t> ants;  ///< sent, by core::AntType byte
-    uint32_t interRt0 = 0;         ///< node 0's InterRT records after the run
-    uint32_t intraRt1 = 0;         ///< node 1's IntraRT cells
+    std::map<int, uint64_t> ants;       ///< sent, by core::AntType byte
+    std::map<int, uint64_t> overheard;  ///< overheard (#5 (s)), by core::AntType byte
+    uint32_t interRt0 = 0;              ///< node 0's InterRT records after the run
+    uint32_t intraRt1 = 0;              ///< node 1's IntraRT cells
     uint32_t waiting0 = 0;
     // The router observer: the trace sources' own tallies, and the counters.
     uint64_t ctlTx = 0;
@@ -303,6 +304,9 @@ public:
         for (uint32_t i = 0; i < 4; ++i) {
             Proto(nodes.Get(i))
                 ->TraceConnect("AntTx", std::to_string(i), MakeCallback(&Chain::AntTx, this));
+            Proto(nodes.Get(i))
+                ->TraceConnect("AntOverheard", std::to_string(i),
+                               MakeCallback(&Chain::AntOverheard, this));
         }
         for (uint32_t i = 0; i < 4; ++i) {
             nodes.Get(i)->GetObject<Ipv4L3Protocol>()->TraceConnect(
@@ -351,6 +355,12 @@ private:
         std::ostringstream os;
         os << Simulator::Now().GetNanoSeconds() << " n" << node << " tx type=" << int{type}
            << (broadcast ? " bcast" : " ucast");
+        m_run.trace.push_back(os.str());
+    }
+    void AntOverheard(std::string node, uint8_t type) {
+        ++m_run.overheard[type];
+        std::ostringstream os;
+        os << Simulator::Now().GetNanoSeconds() << " n" << node << " overheard type=" << int{type};
         m_run.trace.push_back(os.str());
     }
     void IpTx(std::string node, Ptr<const Packet> p, Ptr<Ipv4>, uint32_t) {
@@ -409,6 +419,9 @@ private:
         // external forward ant finds it and node 0 keeps the InterRT record.
         NS_TEST_EXPECT_MSG_GT(r.ants.at(kExternal), 0u, "an inter-zone discovery");
         NS_TEST_EXPECT_MSG_GT(r.interRt0, 0u, "node 0 keeps an InterRT record for node 3");
+        // #5 (s): node 0 overhears node 1 relaying the external ant to node 2.
+        NS_TEST_EXPECT_MSG_GT(r.overheard.count(kExternal) ? r.overheard.at(kExternal) : 0u, 0u,
+                              "external forward ants overheard");
         // The first packet waits for the discovery and goes with the others.
         NS_TEST_EXPECT_MSG_EQ(r.received, r.sent, "every packet delivered");
         NS_TEST_EXPECT_MSG_EQ(r.waiting0, 0u, "nothing left waiting");

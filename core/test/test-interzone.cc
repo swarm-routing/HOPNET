@@ -49,8 +49,10 @@ void TestBordercastSkipByBestNeighbour(Checker& c) {
     FakeClock clock;
     FakeLinkState link;
     SeededRng rng(1);
-    IntraZone intra(Config{}, D, clock, link, rng);
-    InterZone z(Config{}, intra, clock);
+    Config cfg;  // (b) alone: the bordercast at once, no wait (#5 (t), TestQueryDelay)
+    cfg.queryProcessingDelay = 0.0;
+    IntraZone intra(cfg, D, clock, link, rng);
+    InterZone z(cfg, intra, clock);
     neighbours(intra, {C, J});
     // Cell (via, p), hops 2: p's internal ant relayed by `via`.
     auto peripheralVia = [&](NodeAddress p, NodeAddress via, double time) {
@@ -183,6 +185,217 @@ void TestQueryDetection(Checker& c) {
         const Outcome kept = net.inject(C, externalAnt(S, T, 72, {S, D}, A), D);
         c.check(kept.decisions.size() == 1 && kept.decisions[0].action == RouteAction::Drop,
                 "the newest is still detected");
+    }
+}
+
+void TestQueryOverhearing(Checker& c) {
+    // #5 (s), accepted 2026-11-13: ZRP's QD2. A node detects a query it only
+    // overheard (a copy addressed to another node), as a transit relay does
+    // under (q). In Fig. 4.1, M's copy toward C (previous bordercaster M)
+    // can be overheard by D.
+    {
+        Net net = fig41();
+        net.inter(D).overhear(externalAnt(S, T, 60, {S, M}, C));
+        const std::size_t before = net.ants.size();
+        const Outcome covered = net.inject(D, externalAnt(S, T, 60, {S}, D), C);
+        c.check(covered.decisions.size() == 1 && covered.decisions[0].action == RouteAction::Drop &&
+                    targetsSentBy(net, D, before).empty(),
+                "D overheard (S, 60) from M: covered, it does not bordercast S's copy");
+        net.inter(D).overhear(externalAnt(S, K, 61, {S, M}, C));
+        const Outcome inZone = net.inject(D, externalAnt(S, K, 61, {S}, D), C);
+        c.check(inZone.decisions.size() == 1 &&
+                    inZone.decisions[0].action == RouteAction::Unicast &&
+                    inZone.decisions[0].message->target == K,
+                "but still sends it toward a destination in its zone ([W07] p. 27)");
+        const Outcome relayed = net.inject(D, externalAnt(S, T, 60, {S}, K), C);
+        c.check(relayed.decisions.size() == 1 && relayed.decisions[0].action == RouteAction::Drop,
+                "and, as a relay, ends a bordercast copy of it from another bordercaster (S)");
+    }
+    {
+        // Overheard from the same bordercaster: S's copy toward A, then S's
+        // copy addressed to D. One bordercast's copies do not cover D.
+        Net net = fig41();
+        net.inter(D).overhear(externalAnt(S, T, 62, {S}, A));
+        const std::size_t before = net.ants.size();
+        net.inject(D, externalAnt(S, T, 62, {S}, D), C);
+        c.check(targetsSentBy(net, D, before) == std::set<NodeAddress>{K, M},
+                "a copy overheard from D's own bordercaster leaves D uncovered");
+    }
+    {
+        // Directed copies are not bordercasts (#5 (q)): overhearing one
+        // detects nothing.
+        Net net = fig41();
+        net.inter(D).overhear(externalAnt(S, T, 63, {S, M, A}, A));  // following a route
+        net.inter(D).overhear(externalAnt(S, T, 63, {S, M}, T));     // to the destination
+        const std::size_t before = net.ants.size();
+        net.inject(D, externalAnt(S, T, 63, {S}, D), C);
+        c.check(targetsSentBy(net, D, before) == std::set<NodeAddress>{K, M},
+                "a directed copy overheard does not cover D");
+    }
+    {
+        // Overhearing never sends, never touches a table.
+        Net net = fig41();
+        const std::size_t ants = net.ants.size();
+        const std::size_t cells = net.intra(D).table().size();
+        net.inter(D).overhear(externalAnt(S, T, 64, {S, M}, C));
+        net.inter(D).overhear(externalAnt(S, T, 64, {S, M}, C));  // a MAC retransmission
+        Ant bad = externalAnt(S, T, 65, {M}, C);                  // Path not from its source
+        net.inter(D).overhear(bad);
+        net.inject(D, externalAnt(S, T, 65, {S}, D), C);
+        c.check(net.ants.size() > ants && net.intra(D).table().size() == cells,
+                "a malformed overheard ant is ignored, and nothing is sent or stored");
+    }
+    {
+        // With the switch off, (q)'s QD1 alone: an overheard copy is ignored.
+        Config cfg;
+        cfg.queryOverhearing = false;
+        Net net = fig41(1, cfg);
+        net.inter(D).overhear(externalAnt(S, T, 60, {S, M}, C));
+        const std::size_t before = net.ants.size();
+        net.inject(D, externalAnt(S, T, 60, {S}, D), C);
+        c.check(targetsSentBy(net, D, before) == std::set<NodeAddress>{K, M},
+                "queryOverhearing = false: D still bordercasts");
+        Config off;
+        off.queryDetection = false;
+        Net net2 = fig41(1, off);
+        net2.inter(D).overhear(externalAnt(S, T, 60, {S, M}, C));
+        const std::size_t before2 = net2.ants.size();
+        net2.inject(D, externalAnt(S, T, 60, {S}, D), C);
+        c.check(targetsSentBy(net2, D, before2) == std::set<NodeAddress>{K, M},
+                "and so with queryDetection off");
+    }
+    {
+        // The whole discovery of Fig. 4.1, every unicast ant overheard by the
+        // sender's other neighbours: S still gets its route.
+        Net net = fig41();
+        net.send(S, T);
+        c.check(net.inter(S).table().find(T, 0.0) != nullptr && net.delivered.size() == 1,
+                "with overhearing the discovery still finds T and the packet arrives");
+    }
+}
+
+void TestQueryDelay(Checker& c) {
+    // #5 (t), accepted 2026-11-13: BRP's random query-processing delay. A
+    // bordercaster addressed by a copy waits U[0, J) before it bordercasts and
+    // learns coverage in the wait. Calls go straight to D (not inject), so the
+    // test network's timers do not fire on their own.
+    const Time J = Config{}.queryProcessingDelay;
+    c.check(J == 0.1, "J = 0.1 s (fidelity, Query-processing delay)");
+    {
+        Net net = fig41();
+        const Outcome wait = net.inter(D).onReceive(externalAnt(S, T, 70, {S}, D), C);
+        c.check(wait.decisions.empty() && wait.querySource == S && wait.querySeq == 70 &&
+                    wait.queryWait >= 0.0 && wait.queryWait < J,
+                "D sends nothing yet and asks for a wait in [0, J)");
+        const Outcome go = net.inter(D).onQueryDelay(S, 70);
+        std::set<NodeAddress> targets;
+        for (const auto& d : go.decisions)
+            if (d.action == RouteAction::Unicast && d.message) targets.insert(d.message->target);
+        c.check(targets == std::set<NodeAddress>{K, M}, "after the wait, D bordercasts to K and M");
+        c.check(net.inter(D).onQueryDelay(S, 70).decisions.empty(), "a second timer finds nothing");
+    }
+    {
+        // A copy from another bordercaster (M) that D would relay in the wait
+        // ends at D (q): it covers nothing, so D still bordercasts, skipping M
+        // (on its Path). Clarified on #5: otherwise the query could die here.
+        Net net = fig41();
+        net.inter(D).onReceive(externalAnt(S, T, 71, {S}, D), C);
+        const Outcome ended = net.inter(D).onReceive(externalAnt(S, T, 71, {S, M}, C), I);
+        c.check(ended.decisions.size() == 1 && ended.decisions[0].action == RouteAction::Drop,
+                "D ends M's copy (q)");
+        std::set<NodeAddress> targets;
+        for (const auto& d : net.inter(D).onQueryDelay(S, 71).decisions)
+            if (d.message) targets.insert(d.message->target);
+        c.check(targets == std::set<NodeAddress>{K},
+                "and still bordercasts, without M: a copy it ended covers nothing");
+    }
+    {
+        // The case that clarified it (#5): at seed 11, T's query reaches M
+        // from R; M waits, and ends O's copies (q) in the wait. M must still
+        // bordercast, or T's discovery fails. With and without (s).
+        for (bool ovh : {false, true}) {
+            Config cfg;
+            cfg.queryOverhearing = ovh;
+            Net net = fig41(11, cfg);
+            net.send(S, T);
+            net.send(T, S);
+            c.check(net.delivered.size() == 2 && net.inter(T).table().find(S, 0.0),
+                    ovh ? "T finds S with overhearing" : "T finds S (QD1 only)");
+        }
+    }
+    {
+        // A copy D overhears from another bordercaster goes on past D: it
+        // covers D's zone and cancels the bordercast (#5 (s)).
+        Net net = fig41();
+        net.inter(D).onReceive(externalAnt(S, T, 72, {S}, D), C);
+        net.inter(D).overhear(externalAnt(S, T, 72, {S, M}, C));
+        const Outcome go = net.inter(D).onQueryDelay(S, 72);
+        c.check(go.decisions.size() == 1 && go.decisions[0].action == RouteAction::Drop,
+                "a covering copy overheard in the wait cancels the bordercast");
+    }
+    {
+        // A copy from the same bordercaster does not cover D.
+        Net net = fig41();
+        net.inter(D).onReceive(externalAnt(S, T, 73, {S}, D), C);
+        net.inter(D).overhear(externalAnt(S, T, 73, {S}, A));
+        std::set<NodeAddress> targets;
+        for (const auto& d : net.inter(D).onQueryDelay(S, 73).decisions)
+            if (d.message) targets.insert(d.message->target);
+        c.check(targets == std::set<NodeAddress>{K, M}, "one bordercast's branches do not cover D");
+    }
+    {
+        // A peripheral node seen on a copy's Path in the wait has bordercast
+        // the query already: skipped. Here M's copy addressed to D arrives as
+        // a duplicate.
+        Net net = fig41();
+        net.inter(D).onReceive(externalAnt(S, T, 74, {S}, D), C);
+        const Outcome dup = net.inter(D).onReceive(externalAnt(S, T, 74, {S, M}, D), I);
+        c.check(dup.decisions.size() == 1 && dup.decisions[0].action == RouteAction::Drop,
+                "the duplicate is dropped (#5 (b))");
+        std::set<NodeAddress> targets;
+        for (const auto& d : net.inter(D).onQueryDelay(S, 74).decisions)
+            if (d.message) targets.insert(d.message->target);
+        c.check(targets == std::set<NodeAddress>{K},
+                "and M, on its Path, is skipped: D sends to K");
+    }
+    {
+        // No wait where the node can answer: the destination in its zone, or
+        // a cached InterRT route; and none at the origin of a query.
+        Net net = fig41();
+        const Outcome inZone = net.inter(D).onReceive(externalAnt(S, K, 75, {S}, D), C);
+        c.check(inZone.querySource == kInvalidAddress && inZone.decisions.size() == 1 &&
+                    inZone.decisions[0].message && inZone.decisions[0].message->target == K,
+                "the destination in the zone: sent at once");
+        const auto origin = net.inter(S).discover(T);
+        c.check(!origin.empty() && net.queryWaits.empty(), "the source bordercasts at once");
+    }
+    {
+        // Waits are drawn from the node's IRng: a seed fixes them, another
+        // seed changes them (org rule 5). J = 0 draws none.
+        auto waits = [](std::uint64_t seed, Time j) {
+            Config cfg;
+            cfg.queryProcessingDelay = j;
+            Net net = fig41(seed, cfg);
+            net.send(S, T);
+            return std::pair{net.queryWaits, net.inter(S).table().find(T, 0.0) != nullptr};
+        };
+        const auto a = waits(3, J);
+        c.check(!a.first.empty() && a.second && a == waits(3, J), "a fixed seed: the same waits");
+        c.check(a.first != waits(4, J).first, "another seed: other waits");
+        const auto none = waits(3, 0.0);
+        c.check(none.first.empty() && none.second, "J = 0: no wait, and the route is found");
+    }
+    {
+        // Bounded (org rule 7): at most historyCapacity bordercasts wait; past
+        // that, a bordercaster sends at once.
+        Config cfg;
+        cfg.historyCapacity = 1;
+        Net net = fig41(1, cfg);
+        const Outcome first = net.inter(D).onReceive(externalAnt(S, T, 76, {S}, D), C);
+        const Outcome second = net.inter(D).onReceive(externalAnt(S, T, 77, {S}, D), C);
+        c.check(first.querySource == S && second.querySource == kInvalidAddress &&
+                    !second.decisions.empty() && second.decisions[0].action == RouteAction::Unicast,
+                "a second waiting bordercast past the capacity goes at once");
     }
 }
 

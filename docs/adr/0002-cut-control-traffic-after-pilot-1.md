@@ -89,7 +89,8 @@ generations differ only in HOPNET's commit.
   previous bordercaster's zone). Rejected again, as in (b): it needs the
   extended (2r − 1) zone HOPNET does not keep.
 - **Detection by overhearing (QD2) and the random query-processing delay.**
-  Deferred. QD2 needs promiscuous reception of unicast ants in the adapter,
+  Deferred here; adopted after `pilot-2` as readings (s) and (t) (see the
+  amendment below). QD2 needs promiscuous reception of unicast ants in the adapter,
   and the delay slows every discovery. Both remain candidates if (q) is not
   enough.
 - **Dropping duplicates at every transit relay.** Rejected, as in (b): it
@@ -114,3 +115,35 @@ generations differ only in HOPNET's commit.
 - The anchor's AntHocNet pin moves to the v2.7.0 release commit in its own
   change before the anchor, not in this decision, so `pilot-1` and
   `pilot-2` stay comparable.
+
+## Amendment, 2026-11-13: readings (s) and (t) after the `pilot-2` NO-GO
+
+`pilot-2` was NO-GO again (#5): HOPNET's PDR at s = 1 stayed under
+threshold A, and at s = 2 discoveries still failed. The maintainer approved
+the two candidates deferred above. They are pre-registered on #5 before any
+code (<https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6867580858>),
+are the defaults, and are recorded in `docs/fidelity.md` ("Query control",
+"Query-processing delay"):
+
+1. **(s) Query detection by overhearing, ZRP's QD2.** The ns-3 adapter
+   receives promiscuously and hands every HOPNET ant addressed to another
+   node to `InterZone::overhear`, which records a bordercast copy's query
+   with its previous bordercaster, as a transit relay does under (q). The
+   adapter decides nothing; the core sends nothing and changes no table.
+   `Config::queryOverhearing` turns it off.
+2. **(t) A random query-processing delay before a bordercast** (the BRP
+   draft §4 and Appendix E.2, `RELAY_JITTER`): a bordercaster addressed by
+   a copy that found no route and is not covered waits U[0, 0.1 s), drawn
+   from the node's `IRng`, before it bordercasts; the query's origin never
+   waits. In the wait, a copy overheard from another bordercaster cancels
+   the bordercast (one the node ends itself under (q) does not, as
+   clarified on #5), and the Path nodes of the copies it sees are skipped as
+   peripheral nodes. `Config::queryProcessingDelay = 0` turns it off.
+
+Both are repo readings and deviations in cost from [W07] p. 28, as (q) is.
+Neither changes the wire format. With both off, HOPNET is exactly as at
+`pilot-2`'s commit. `pilot-3` keeps `pilot-2`'s image, dependency set,
+geometry, seeds, thresholds and go/no-go table, so it differs from
+`pilot-2` only in HOPNET's commit. If `pilot-3` is NO-GO too, a written
+infeasibility verdict (golden rule 12) is drafted on #5 for the maintainer
+to decide on; the thresholds do not change.

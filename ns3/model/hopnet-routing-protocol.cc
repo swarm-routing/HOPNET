@@ -6,6 +6,7 @@
 #include "hopnet-interzone.h"
 #include "hopnet-intrazone.h"
 
+#include "ns3/ipv4-header.h"
 #include "ns3/ipv4.h"
 #include "ns3/log.h"
 #include "ns3/loopback-net-device.h"
@@ -27,6 +28,9 @@ NS_OBJECT_ENSURE_REGISTERED(RoutingProtocol);
 namespace {
 
 constexpr uint8_t kUdpProtocol = 17;
+/// EtherType of IPv4, the frames the promiscuous handler reads. Spelled out:
+/// ns-3 deprecates its protocol-number constants between releases.
+constexpr uint16_t kIpv4EtherType = 0x0800;
 /// The protocol constants: core::Config's defaults, each sourced in
 /// docs/fidelity.md. The adapter has none of its own.
 const core::Config kConfig{};
@@ -54,7 +58,12 @@ TypeId RoutingProtocol::GetTypeId() {
             .AddConstructor<RoutingProtocol>()
             .AddTraceSource("AntTx", "An ant this node sent (core::AntType byte, broadcast).",
                             MakeTraceSourceAccessor(&RoutingProtocol::m_antTx),
-                            "ns3::hopnet::RoutingProtocol::AntTxCallback");
+                            "ns3::hopnet::RoutingProtocol::AntTxCallback")
+            .AddTraceSource("AntOverheard",
+                            "An ant this node overheard, addressed to another node "
+                            "(core::AntType byte).",
+                            MakeTraceSourceAccessor(&RoutingProtocol::m_antOverheard),
+                            "ns3::hopnet::RoutingProtocol::AntOverheardCallback");
     // The ant kinds' names for the observer's ControlTx/ControlRx readers
     // (#40), registered once with the TypeId: a table set later through
     // SwarmRoutingHelper::SetKindNames replaces it and is not reset here.
@@ -80,6 +89,18 @@ void RoutingProtocol::DoInitialize() {
     // drawn into a named local from the seeded stream (org rule 5).
     const double draw = Rng().uniform();
     Timers().schedule(draw * kConfig.internalAntPeriod, [this] { InternalAntTick(); });
+    // Query detection by overhearing (#5 (s)): frames addressed to other
+    // nodes, on every device but the loopback, as Termite's adapter does.
+    if (kConfig.queryDetection && kConfig.queryOverhearing) {
+        if (Ptr<Node> node = GetObject<Node>()) {
+            for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
+                Ptr<NetDevice> dev = node->GetDevice(i);
+                if (DynamicCast<LoopbackNetDevice>(dev)) continue;
+                node->RegisterProtocolHandler(MakeCallback(&RoutingProtocol::Overhear, this),
+                                              kIpv4EtherType, dev, true);
+            }
+        }
+    }
     SwarmRoutingBase::DoInitialize();
 }
 
@@ -160,6 +181,13 @@ void RoutingProtocol::Process(const core::Outcome& o, Data* data, core::DataHead
         const swarm::core::NodeAddress dest = o.repairFor;
         Timers().schedule(o.repairWait, [this, dest] {
             if (m_inter) Process(m_inter->onRepairTimeout(dest), nullptr, nullptr);
+        });
+    }
+    if (o.querySource != swarm::core::kInvalidAddress) {  // #5 (t)
+        const swarm::core::NodeAddress source = o.querySource;
+        const uint32_t seq = o.querySeq;
+        Timers().schedule(o.queryWait, [this, source, seq] {
+            if (m_inter) Process(m_inter->onQueryDelay(source, seq), nullptr, nullptr);
         });
     }
     if (o.routeReady != swarm::core::kInvalidAddress) Resume(o.routeReady);
@@ -309,6 +337,28 @@ void RoutingProtocol::RecvControl(Ptr<Packet> p, Ipv4Address from, Ipv4Address /
         return;
     }
     Process(m_inter->onReceive(*ant, ToNodeAddress(from)), nullptr, nullptr);
+}
+
+void RoutingProtocol::Overhear(Ptr<NetDevice> /*device*/, Ptr<const Packet> frame,
+                               uint16_t /*protocol*/, const Address& /*from*/,
+                               const Address& /*to*/, NetDevice::PacketType type) {
+    // Only frames addressed to another node: the rest arrive through the
+    // control socket. Only HOPNET's ants (UDP kHopnetPort both ways); the core
+    // decides what an overheard ant means.
+    if (type != NetDevice::PACKET_OTHERHOST || !m_inter) return;
+    Ptr<Packet> q = frame->Copy();
+    Ipv4Header ip;
+    if (q->GetSize() < ip.GetSerializedSize()) return;
+    q->RemoveHeader(ip);
+    if (ip.GetProtocol() != kUdpProtocol || ip.GetFragmentOffset() != 0) return;
+    UdpHeader udp;
+    if (q->GetSize() < udp.GetSerializedSize()) return;
+    q->RemoveHeader(udp);
+    if (udp.GetSourcePort() != kHopnetPort || udp.GetDestinationPort() != kHopnetPort) return;
+    const auto ant = DecodeAntPacket(q, kConfig.maxPathLength);
+    if (!ant) return;
+    m_antOverheard(static_cast<uint8_t>(ant->type));
+    m_inter->overhear(*ant);
 }
 
 void RoutingProtocol::OnLinkFailure(Ipv4Address neighbor) {
