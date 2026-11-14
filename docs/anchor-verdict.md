@@ -129,12 +129,18 @@ Why each generation is read as it is:
 **One deviation in `pilot-3-area300`.** org-bot's swarm-core pin bumps
 (#122, #125) merged on `main` while the round was in flight. Its
 cells were built on swarm-core `6419567d` (s1–s3) and `e20aad3f` (s4–s5),
-not the pre-registered `69664219`. Local runs on the pilot's image settle
-it. Seed 1 on `69664219` and on `e20aad3f` is byte-identical to the CI cell
-built on `6419567d`, and seed 4 on `69664219` to the CI cell built on
-`e20aad3f`. That holds for every line except `##PERF##`, `##PROV##` and
-`##ARGS##`, so the results are those of the pre-registered set. The details
-are in the results comment.
+not the pre-registered `69664219`. Local runs on the pilot's image digest
+settle it. Each used the cell's exact command and the same HOPNET,
+routing-bench and AntHocNet commits, with only swarm-core varied:
+
+- every one of the five seeds, built on `69664219`, is byte-identical to its
+  CI cell: seeds 1–3 against the cells built on `6419567d`, seeds 4–5
+  against those built on `e20aad3f`;
+- seed 1 built on `e20aad3f` is byte-identical too.
+
+Byte-identical here means every line except `##PERF##` (CPU time),
+`##PROV##` (the commits) and the `##ARGS##` line CI adds. So the results are
+those of the pre-registered set. The details are in the results comment.
 
 ## What the thesis leaves unrecoverable
 
