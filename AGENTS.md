@@ -90,6 +90,14 @@ set the campaign's cells recorded first: do not merge a change to that file's
 State lives in `.campaign/<generation>/` (git-ignored); a cell's
 artifact is kept 7 days.
 
+`core/` builds at C++23, the C++ standard of the ns-3 release the org
+supports (ns-3's `CMAKE_CXX_STANDARD_MINIMUM`, C++23 from ns-3.46), the same
+standard the ns-3 module compiles at inside ns-3 and the one swarm-core's
+`core/` targets and passes on through `swarm::core`
+(swarm-routing/ns3-swarm-core#141, its `docs/api-policy.md` "C++ standard").
+When ns-3 raises its minimum, `core/CMakeLists.txt`'s `CMAKE_CXX_STANDARD`
+follows.
+
 ## Golden rules (invariants — do not break)
 
 Org-wide (1–9), then this repo's own.
