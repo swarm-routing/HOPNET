@@ -1,0 +1,54 @@
+# The anchor pilot a third time, `pilot-3` (#5): pilot-2.yaml unchanged except
+# for HOPNET's commit. `pilot-2` was NO-GO (reconstruction): HOPNET at s = 1
+# reached 89.34 % +- 2.10 against A's 92 %, and discovery still failed at s = 2.
+# The maintainer approved readings (s) and (t) on 2026-11-13 (the two ADR-0002
+# deferred): ZRP's query detection by overhearing (QD2) and a random
+# query-processing delay before a bordercast, U[0, 0.1 s) from the node's IRng
+# (docs/adr/0002-cut-control-traffic-after-pilot-1.md, amendment). They were
+# merged in #115; source_sha is main after #115.
+#
+# Pre-registered on #5 before any code and before dispatch
+# (https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6867580858,
+# clarified in https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6867962574),
+# with pilot-1's thresholds and go/no-go table unchanged: A, HOPNET's mean PDR
+# at s = 1 >= 92 %; B, AntHocNet's >= 91 %; s = 2 reported, not decisive.
+#
+# Kept from pilot-1 and pilot-2 so the generations differ only in HOPNET's
+# commit: the image digest, the dependency set benchmark-cell.yml pins
+# (swarm-core 6966421, routing-bench 3d279b8, AntHocNet main c3230ded, not
+# v2.7.0: #113 bumps it after this pilot), the geometry, the flags, seeds 1-5,
+# s = 1 and s = 2. A later run is a new plan, never an edit of this one.
+#
+#   P=tools/bench/campaigns/pilot-3.yaml
+#   C="python3 ../ns3-tools/python/ns3_tool/campaign.py"   # or `ns3-campaign`
+#   $C plan $P                                      # 10 jobs; dispatches nothing
+#   $C dispatch $P --cap 4
+#   $C status $P --brief
+#   $C collect $P --out .campaign/pilot-3/cells
+#   $C verdicts $P --dir .campaign/pilot-3/cells    # hopnet - anthocnet per cell
+#   python3 ../ns3-tools/python/ns3_tool/bench_parse.py --all .campaign/pilot-3/cells/pilot-s1-pilot-3.txt   # per-arm PDR
+generation: pilot-3
+ref: main
+repo: swarm-routing/HOPNET
+source_sha: 61042abd053d371d3803820e8f373831f6c9c244
+workflow: benchmark-cell.yml
+program: routing-compare
+# ns3-dev:3.48-optimized (fb7596b), the image the other protocols' smokes and
+# anchors run on.
+image: ghcr.io/swarm-routing/ns3-dev@sha256:5585a93c5cea1980592539e2d26a4e111e0ff4b0cc63b3dfd6ea5de459d80d3f
+cap: 4
+control: pilot
+reference: anthocnet
+
+arms:
+  pilot: ""
+
+x-field: &field "--scenario=paper --time=900 --speed=20 --pause=30 --range=300 --flows=20 --propagation=range --mobility=rwp --transport=udp --diag --runs=1 --protocols=hopnet,anthocnet"
+cells:
+  # s = 1: 50 nodes, 1500 m x 500 m
+  pilot-s1: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: *field, extraArgs: "--nNodes=50 --areaX=1500 --areaY=500"}, blocks: [1, 2, 3, 4, 5]}
+  # s = 2: 200 nodes, 3000 m x 1000 m
+  pilot-s2: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: *field, extraArgs: "--nNodes=200 --areaX=3000 --areaY=1000"}, blocks: [1, 2, 3, 4, 5]}
+
+jobs:
+  - {arms: [pilot], cells: "*"}
