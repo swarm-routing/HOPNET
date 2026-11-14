@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SWARM_CORE_DIR "" CACHE PATH "swarm-core's core/ directory; empty: fetch SWARM_CORE_REF")
-set(SWARM_CORE_REF "7be7fe212d66174bfd26e0510bdacb0709171f02" CACHE STRING
+set(SWARM_CORE_REF "59a52a722e04a7eba4e41abe61e4f852e2f33b76" CACHE STRING
     "swarm-routing/ns3-swarm-core commit to fetch when SWARM_CORE_DIR is empty")
 option(HOPNET_CORE_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
