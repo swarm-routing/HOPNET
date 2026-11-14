@@ -21,4 +21,4 @@ jobs:
     with:
       dual-roots: core/
       core-roots: core/
-      core-deps: swarm-routing/ns3-swarm-core@7be7fe212d66174bfd26e0510bdacb0709171f02:core
+      core-deps: swarm-routing/ns3-swarm-core@a8e5e1a7438656c920fb6bfa2164b7f3197b4a19:core
