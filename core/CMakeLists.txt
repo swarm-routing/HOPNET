@@ -18,7 +18,8 @@ project(hopnet_core LANGUAGES CXX)
 
 # The C++ standard of the ns-3 release the org supports: ns-3's own
 # CMAKE_CXX_STANDARD_MINIMUM (C++23 from ns-3.46), the standard swarm-core's
-# core/ targets too (swarm-routing/ns3-swarm-core#141).
+# core/ targets too (swarm-routing/ns3-swarm-core#141). Set here, not left to
+# swarm::core: a swarm-core pin before ns3-swarm-core#142 passes on C++20.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
