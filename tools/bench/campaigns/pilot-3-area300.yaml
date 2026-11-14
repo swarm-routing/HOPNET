@@ -1,0 +1,53 @@
+# The thesis's printed s = 1 area, `pilot-3-area300` (#5): pilot-3.yaml's s = 1
+# cell with one change, the area 1500 m x 300 m instead of 1500 m x 500 m.
+# [W07] p. 36 and p. 39 start the scaling sweep from 1500 m x 300 m; the pilots
+# use [DDG04] 4.2's 1500 m x 500 m because [W07]'s own end point (3000 m x
+# 1000 m at s = 2) is 1500 x 500 doubled, not 1500 x 300 (docs/fidelity.md,
+# "AntHocNet comparison: scaling sweep"). This is the one place the pilot
+# geometry departs from what [W07] prints. The maintainer approved this
+# variant on 2026-11-14 for the same round as pilot-3, the last pilot round.
+#
+# Pre-registered on #5 before dispatch
+# (https://github.com/swarm-routing/HOPNET/issues/5#issuecomment-6870386731):
+# A, HOPNET's mean PDR at s = 1 >= 92 %; B, AntHocNet's >= 91 %; the go/no-go
+# table unchanged and applied to this generation and to pilot-3 separately. A
+# pass here alone reads "reproduced only on the thesis's printed geometry".
+#
+# Identical to pilot-3 except the s = 1 areaY: HOPNET's commit, the image
+# digest, the dependency set benchmark-cell.yml pins (swarm-core 6966421,
+# routing-bench 3d279b8, AntHocNet c3230ded), the field flags, 50 nodes, seeds
+# 1-5. Both arms run at 1500 m x 300 m (one invocation per seed), so B is read
+# on the same geometry. s = 1 only: s = 2 is the same in either reading and
+# pilot-3 runs it. The cap counts the workflow's active runs, so pilot-3 and
+# this plan together keep at most 4 cells in flight.
+#
+#   P=tools/bench/campaigns/pilot-3-area300.yaml
+#   C="python3 ../ns3-tools/python/ns3_tool/campaign.py"   # or `ns3-campaign`
+#   $C plan $P                                      # 5 jobs; dispatches nothing
+#   $C dispatch $P --cap 4
+#   $C status $P --brief
+#   $C collect $P --out .campaign/pilot-3-area300/cells
+#   $C verdicts $P --dir .campaign/pilot-3-area300/cells    # hopnet - anthocnet
+#   python3 ../ns3-tools/python/ns3_tool/bench_parse.py --all .campaign/pilot-3-area300/cells/pilot-s1-pilot-3-area300.txt
+generation: pilot-3-area300
+ref: main
+repo: swarm-routing/HOPNET
+source_sha: 61042abd053d371d3803820e8f373831f6c9c244
+workflow: benchmark-cell.yml
+program: routing-compare
+# ns3-dev:3.48-optimized (fb7596b), pilot-3's image.
+image: ghcr.io/swarm-routing/ns3-dev@sha256:5585a93c5cea1980592539e2d26a4e111e0ff4b0cc63b3dfd6ea5de459d80d3f
+cap: 4
+control: pilot
+reference: anthocnet
+
+arms:
+  pilot: ""
+
+x-field: &field "--scenario=paper --time=900 --speed=20 --pause=30 --range=300 --flows=20 --propagation=range --mobility=rwp --transport=udp --diag --runs=1 --protocols=hopnet,anthocnet"
+cells:
+  # s = 1: 50 nodes, 1500 m x 300 m ([W07]'s printed start area)
+  pilot-s1: {workflow: benchmark-cell.yml, inputs: {harness: routing-compare, args: *field, extraArgs: "--nNodes=50 --areaX=1500 --areaY=300"}, blocks: [1, 2, 3, 4, 5]}
+
+jobs:
+  - {arms: [pilot], cells: "*"}
