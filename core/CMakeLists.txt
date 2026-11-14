@@ -43,7 +43,9 @@ if(SWARM_CORE_DIR)
 else()
   # The swarm-core release ../swarm-core.lock names (swarm-routing/ns3-swarm-core#134):
   # its tarball by URL, checked against the lock's SHA256 (from the release's
-  # SHA256SUMS). CMake strips the tarball's top directory swarm-core/.
+  # SHA256SUMS). CMake strips the tarball's top directory swarm-core/. Extracted
+  # files get the extraction time (DOWNLOAD_EXTRACT_TIMESTAMP FALSE, CMake 3.24+),
+  # so a lock bump rebuilds every swarm-core object.
   file(STRINGS ${CMAKE_CURRENT_LIST_DIR}/../swarm-core.lock _swarm_core_lock REGEX "^SWARM_CORE_[A-Z0-9_]+=")
   # a lock bump re-runs the configure step
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/../swarm-core.lock)
@@ -58,7 +60,7 @@ else()
   endforeach()
   set(_swarm_core_timestamp)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
-    set(_swarm_core_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    set(_swarm_core_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
   endif()
   include(FetchContent)
   FetchContent_Declare(swarm_core_src
