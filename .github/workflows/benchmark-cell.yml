@@ -23,9 +23,9 @@ run-name: ${{ inputs.label || inputs.cell || 'benchmark cell' }}
 #   - routing-bench (the harness) at an ns3-tools commit, bumped by PR;
 #   - anthocnet (swarm-routing/AntHocNet's ns-3 module, which registers the
 #     `anthocnet` arm beside routing-bench): the anchor's comparator (golden
-#     rule 12, docs/fidelity.md "Anchor candidate"). The anchor pins AntHocNet's
-#     v2.7.0 release commit, with its defaults; until v2.7.0 ships the line
-#     names AntHocNet main's commit, and every run states it. Its module
+#     rule 12, docs/fidelity.md "Anchor candidate"). The line pins AntHocNet's
+#     v2.7.0 release commit, with its defaults (#113); `pilot-1` to `pilot-3`
+#     ran on main's c3230ded, before the release. Every run states it. Its module
 #     compiles AntHocNet's core/ from inside the module directory (what
 #     AntHocNet's `make install-ns3` copies there), so `stage` copies core/
 #     include, src and LICENSE into it. A cell that runs only `hopnet` builds
@@ -84,7 +84,7 @@ jobs:
       dependencies: |
         swarm-core=swarm-routing/ns3-swarm-core@e20aad3f92dfd253d7c6411f648b90a32eee5038
         routing-bench=swarm-routing/ns3-tools@3d279b83392a00288050574cee4288f30205658b:ns3/routing-bench
-        anthocnet=swarm-routing/AntHocNet@c3230dedb6bda8011b0890addf806de9363bfdd3:ns3/anthocnet
+        anthocnet=swarm-routing/AntHocNet@3a01ac8f5f028ac5478261b8b9d37b36565b8f10:ns3/anthocnet
       stage: |
         a="$RUNNER_TEMP/deps/anthocnet"
         mkdir -p "$a/ns3/anthocnet/core"

@@ -58,7 +58,7 @@ swarm-routing/.github's `reusable-benchmark-cell.yml` in build mode: each cell
 checks out its `source_sha`, builds `hopnet` with swarm-core at
 `SWARM_CORE_REF`, routing-bench at a pinned ns3-tools commit and AntHocNet's
 ns-3 module (the anchor's comparator, golden rule 12: AntHocNet's v2.7.0
-release commit once it ships, `main`'s commit until then; `stage` copies its
+release commit `3a01ac8`; `pilot-1` to `pilot-3` ran on `main`'s `c3230ded`; `stage` copies its
 `core/` into the module, as its `make install-ns3` does) on the ns3-dev image
 given by digest, and runs `routing-compare`. Campaign plans live in
 `tools/bench/campaigns/` and run through `ns3-campaign` (swarm-routing/ns3-tools
