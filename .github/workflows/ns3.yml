@@ -4,24 +4,27 @@ name: ns-3
 
 # The `hopnet` contrib module (ns3/, which compiles core/ as well) in
 # ghcr.io/swarm-routing/ns3-dev (debug and sanitized, the release ns-3
-# supports), on swarm-core `main` (swarm-core golden rule 12: protocols build
-# against main), with the org quality gates: strict warnings, coverage
+# supports), on the swarm-core release swarm-core.lock names (its `main` in
+# the canary leg), with the org quality gates: strict warnings, coverage
 # (report-only, to Codecov), determinism, clang-format and licence headers.
 # SonarQube Cloud stays off until the repository has a project there
 # (org-sync.toml `sonar = false`, swarm-routing/.github#104). routing-bench
 # (swarm-routing/ns3-tools) is built beside it so the harness arm
 # (ns3/helper/hopnet-bench-arms.cc) compiles and runs.
 #
-# core/ also builds alone against swarm-core at SWARM_CORE_REF (core.yml). The
-# `swarm-core / pin` check (swarm-core-pin.yml) keeps the two in step: it fails
-# when swarm-core main's core/ differs from the pinned commit's, so a change
-# there is met by a pin bump here (core/CMakeLists.txt, Makefile, licence.yml
-# and the core-deps below, all one SHA, which it also checks).
+# core/ also builds alone against the swarm-core release swarm-core.lock names
+# (core.yml). This module builds on the same release (the tag in `dependencies`,
+# and in core-deps below); `canary-dependencies` builds on swarm-core and
+# ns3-tools main in one non-blocking leg on push, schedule and dispatch, never on
+# a PR (swarm-routing/.github#411). The `swarm-core / pin` check keeps every tag
+# on the lock's (swarm-routing/ns3-swarm-core#134).
 on:
   push:
     branches: [main]
   pull_request:
   merge_group:  # its checks are required, so the merge queue runs them too (swarm-routing/.github#130)
+  schedule:
+    - cron: '17 4 * * 1'  # weekly: the canary leg on a quiet main
   workflow_dispatch:
     inputs:
       ns3-versions:
@@ -40,7 +43,12 @@ jobs:
     uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@main
     with:
       modules: hopnet=ns3
+      # released versions (swarm-routing/ns3-swarm-core#134); the moving refs in the
+      # non-blocking canary leg, outside PRs (swarm-routing/.github#411)
       dependencies: |
+        swarm-core=swarm-routing/ns3-swarm-core@v0.3.0
+        routing-bench=swarm-routing/ns3-tools@v1.0.0:ns3/routing-bench
+      canary-dependencies: |
         swarm-core=swarm-routing/ns3-swarm-core@main
         routing-bench=swarm-routing/ns3-tools@main:ns3/routing-bench
       ns3-versions: ${{ inputs.ns3-versions || '["latest"]' }}
@@ -54,7 +62,7 @@ jobs:
       determinism: hopnet-example --seed={seed}
       dual-roots: 'core/'
       core-roots: 'core/'
-      core-deps: swarm-routing/ns3-swarm-core@7be7fe212d66174bfd26e0510bdacb0709171f02:core
+      core-deps: swarm-routing/ns3-swarm-core@6f039ce35b2c04c97e3ff287217d23823dd6b59f:core
 
   # The coverage report of the `ci` job to Codecov (report-only; GitHub OIDC).
   codecov:
