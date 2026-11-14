@@ -31,7 +31,7 @@ ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-cor
   test/hopnet-test-suite.cc        `test.py -s hopnet`: the core tests, both readers' roundtrip and fuzz, a 4-node chain across zones,
                                    determinism, the observer's trace sources identical with and without
 docs/       fidelity sheet (thesis section -> implementation), parameters with sources and the unknowns
-tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke against the base), pilot.yaml (the anchor's 5-seed pilot `pilot-1`, #5), pilot-2.yaml (the same after readings (n)–(r), ADR-0002)
+tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke against the base), pilot.yaml (the anchor's 5-seed pilot `pilot-1`, #5), pilot-2.yaml (the same after readings (n)–(r), ADR-0002), pilot-3.yaml (the same after readings (s) and (t), ADR-0002 amendment)
 .github/workflows/benchmark-cell.yml   one benchmark cell at a pinned source_sha (reusable-benchmark-cell.yml, build mode); dispatched by ns3-campaign
 ```
 
