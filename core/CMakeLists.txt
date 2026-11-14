@@ -10,8 +10,8 @@
 #
 #   cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
 #
-# SWARM_CORE_DIR: a local swarm-core core/ directory; empty fetches
-# SWARM_CORE_REF (a full commit SHA, bumped by PR) from GitHub.
+# SWARM_CORE_DIR: a local swarm-core core/ directory (development against an
+# unreleased swarm-core); empty fetches the release ../swarm-core.lock names.
 # HOPNET_CORE_SANITIZE=ON adds ASan + UBSan, as the sanitized CI leg.
 cmake_minimum_required(VERSION 3.20)
 project(hopnet_core LANGUAGES CXX)
@@ -20,9 +20,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(SWARM_CORE_DIR "" CACHE PATH "swarm-core's core/ directory; empty: fetch SWARM_CORE_REF")
-set(SWARM_CORE_REF "7be7fe212d66174bfd26e0510bdacb0709171f02" CACHE STRING
-    "swarm-routing/ns3-swarm-core commit to fetch when SWARM_CORE_DIR is empty")
+set(SWARM_CORE_DIR "" CACHE PATH "swarm-core's core/ directory; empty: fetch the release swarm-core.lock names")
 option(HOPNET_CORE_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
 # Sanitizer flags first: they are directory options, so swarm-core's sources,
@@ -43,10 +41,30 @@ if(SWARM_CORE_DIR)
   endif()
   add_subdirectory(${SWARM_CORE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/swarm-core)
 else()
+  # The swarm-core release ../swarm-core.lock names (swarm-routing/ns3-swarm-core#134):
+  # its tarball by URL, checked against the lock's SHA256 (from the release's
+  # SHA256SUMS). CMake strips the tarball's top directory swarm-core/.
+  file(STRINGS ${CMAKE_CURRENT_LIST_DIR}/../swarm-core.lock _swarm_core_lock REGEX "^SWARM_CORE_[A-Z0-9_]+=")
+  # a lock bump re-runs the configure step
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/../swarm-core.lock)
+  foreach(_swarm_core_kv IN LISTS _swarm_core_lock)
+    string(REGEX MATCH "^([A-Z0-9_]+)=(.*)$" _swarm_core_m "${_swarm_core_kv}")
+    set(_LOCK_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+  endforeach()
+  foreach(_swarm_core_key REPO TAG ASSET SHA256)
+    if(NOT _LOCK_SWARM_CORE_${_swarm_core_key})
+      message(FATAL_ERROR "swarm-core.lock: no SWARM_CORE_${_swarm_core_key}")
+    endif()
+  endforeach()
+  set(_swarm_core_timestamp)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(_swarm_core_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  endif()
   include(FetchContent)
   FetchContent_Declare(swarm_core_src
-    GIT_REPOSITORY https://github.com/swarm-routing/ns3-swarm-core.git
-    GIT_TAG ${SWARM_CORE_REF}
+    URL https://github.com/${_LOCK_SWARM_CORE_REPO}/releases/download/${_LOCK_SWARM_CORE_TAG}/${_LOCK_SWARM_CORE_ASSET}
+    URL_HASH SHA256=${_LOCK_SWARM_CORE_SHA256}
+    ${_swarm_core_timestamp}
     SOURCE_SUBDIR core)
   FetchContent_MakeAvailable(swarm_core_src)
 endif()

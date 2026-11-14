@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: GPL-2.0-only
 name: swarm-core pin
 
-# HOPNET's core/ builds on swarm-core's core/ at the commit core/CMakeLists.txt
-# pins (SWARM_CORE_REF). This check (swarm-routing/.github
-# reusable-swarm-core-pin.yml, swarm-routing/.github#174) fails unless the
-# Makefile and every workflow's swarm-core core-deps name that same commit,
-# and when swarm-core main's core/ differs from the pinned core/: then bump
-# the pin in all of them in one PR. The check is named `swarm-core / pin`.
+# HOPNET's core/ builds on swarm-core's core/ at the release swarm-core.lock
+# names (swarm-routing/ns3-swarm-core#134). This check (swarm-routing/.github
+# reusable-swarm-core-pin.yml, check-swarm-core-pin.py in lock mode) fails
+# unless the lock verifies against the release and the Makefile and every
+# workflow name its tag (benchmark-cell.yml: the commit the tag names), and
+# when a newer swarm-core release is out; org-bot then opens the bump PR.
+# swarm-core main moving between releases is no finding. The check is named
+# `swarm-core / pin`.
 on:
   push:
     branches: [main]
