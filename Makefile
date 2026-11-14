@@ -16,7 +16,7 @@ ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
 # swarm-core's core/ at the commit core/CMakeLists.txt pins (SWARM_CORE_REF), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
-SWARM_CORE_REF ?= 69664219b2edc63995614332cf9f651b1720622b
+SWARM_CORE_REF ?= 6419567d98544c6b146a6b62c29c6c8594202098
 # A checkout of swarm-routing/ns3-swarm-core (its main, as ns3.yml) for the ns-3 build.
 SWARM_CORE_NS3 ?= $(CURDIR)/../ns3-swarm-core
 NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_CORE_NS3):/src/ns3-swarm-core:ro" $(NS3_IMAGE) \
