@@ -14,9 +14,9 @@ BUILD_ARGS ?=
 # The org tooling (check-headers.py, org-sync): a shallow clone, refreshed to ORG_REF.
 ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
-# swarm-core's core/ at the commit core/CMakeLists.txt pins (SWARM_CORE_REF), for the include check.
+# swarm-core's core/ at the release swarm-core.lock names (its tag), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
-SWARM_CORE_REF ?= 7be7fe212d66174bfd26e0510bdacb0709171f02
+SWARM_CORE_REF ?= v0.3.0
 # A checkout of swarm-routing/ns3-swarm-core (its main, as ns3.yml) for the ns-3 build.
 SWARM_CORE_NS3 ?= $(CURDIR)/../ns3-swarm-core
 NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_CORE_NS3):/src/ns3-swarm-core:ro" $(NS3_IMAGE) \
@@ -54,7 +54,7 @@ org-tools:  # the same templates CI checks against: refreshed to ORG_REF every t
 	@[ -d "$(ORG_DIR)/.git" ] || { git init -q "$(ORG_DIR)" && git -C "$(ORG_DIR)" remote add origin https://github.com/swarm-routing/.github; }
 	@git -C "$(ORG_DIR)" fetch -q --depth 1 origin $(ORG_REF) && git -C "$(ORG_DIR)" checkout -q --detach FETCH_HEAD
 
-swarm-core:  # swarm-core at SWARM_CORE_REF, for the include check
+swarm-core:  # swarm-core at SWARM_CORE_REF (swarm-core.lock's tag), for the include check
 	@[ -d "$(SWARM_CORE_SRC)/.git" ] || git init -q "$(SWARM_CORE_SRC)"
 	@git -C "$(SWARM_CORE_SRC)" fetch -q --depth 1 https://github.com/swarm-routing/ns3-swarm-core $(SWARM_CORE_REF) && git -C "$(SWARM_CORE_SRC)" checkout -q --detach FETCH_HEAD
 
@@ -69,7 +69,7 @@ check: lint test headers org-sync-check ## everything CI gates on
 ci: check ## exactly what CI runs
 
 core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
-	cmake -S core -B build/core -DSWARM_CORE_REF=$(SWARM_CORE_REF) && cmake --build build/core && ctest --test-dir build/core --output-on-failure
+	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure
 
 # The release asset for swarm-routing/.github's reusable-release.yml, which sets
 # RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
@@ -81,5 +81,6 @@ RELEASE_VERSION ?= $(shell sed -n 's/^version = "\(.*\)"$$/\1/p' .cz.toml)
 dist: ## the release asset in dist/: hopnet-<ver>.tar.gz
 	rm -rf dist && mkdir -p dist
 	git archive --format=tar.gz --prefix=hopnet-$(RELEASE_VERSION)/ -o dist/hopnet-$(RELEASE_VERSION).tar.gz HEAD \
-		$$(git ls-tree --name-only HEAD core ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md AGENTS.md Makefile CHANGELOG.md)
+		$$(git ls-tree --name-only HEAD core swarm-core.lock ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md AGENTS.md Makefile CHANGELOG.md)
 	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/core/LICENSE'
+	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/swarm-core.lock'
