@@ -8,6 +8,7 @@ Licensed per directory, as AntHocNet
 | Path | Licence |
 |------|---------|
 | `core/` | `MIT OR GPL-2.0-only` |
+| `core/test/consumer-package/` (the `find_package(hopnet-core)` consumer) | `MIT OR GPL-2.0-only` |
 | everything else (ns-3 modules, docs, data) | `GPL-2.0-only` |
 
 `MIT OR GPL-2.0-only` means you may use that code under either licence, at
