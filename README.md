@@ -3,7 +3,7 @@
 <!-- org-sync:begin badges -->
 | Group | Badges |
 | --- | --- |
-| Build | [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev) |
+| Build | [![CI](https://github.com/swarm-routing/HOPNET/actions/workflows/ns3.yml/badge.svg)](https://github.com/swarm-routing/HOPNET/actions/workflows/ns3.yml) [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev) |
 | Quality | [![codecov](https://codecov.io/gh/swarm-routing/HOPNET/graph/badge.svg)](https://codecov.io/gh/swarm-routing/HOPNET) [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/HOPNET?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2FHOPNET&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai) |
 | Release | [![Release](https://img.shields.io/github/v/release/swarm-routing/HOPNET?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/HOPNET/releases) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24125265.svg)](https://doi.org/10.5281/zenodo.24125265) [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff) [![Licence: GPL-2.0-only, core/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md) |
 | Trust | [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/swarm-routing/HOPNET/badge)](https://scorecard.dev/viewer/?uri=github.com/swarm-routing/HOPNET) |
