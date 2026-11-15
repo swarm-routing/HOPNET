@@ -40,11 +40,6 @@ jobs:
             -DSWARM_CORE_DIR="$PWD/build/core/_deps/swarm_core_src-src/core"
           cmake --build build/sanitized -j
           ctest --test-dir build/sanitized --output-on-failure
-
-  core-format:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
       - name: The CMake package hopnet-core (find_package, swarm-core from its package; swarm-routing/.github#436)
         run: |
           prefix="$PWD/build/prefix"
@@ -58,6 +53,11 @@ jobs:
           done
           cmake -S core/test/consumer-package -B build/consumer -DCMAKE_PREFIX_PATH="$prefix"
           cmake --build build/consumer && build/consumer/consumer
+
+  core-format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
       - name: Harden the runner (audit egress)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         timeout-minutes: 2  # its download and start take seconds (swarm-routing/.github#164)
