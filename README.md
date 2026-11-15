@@ -1,18 +1,14 @@
 # HOPNET
 
 <!-- org-sync:begin badges -->
-[![Release](https://img.shields.io/github/v/release/swarm-routing/HOPNET?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/HOPNET/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24125265.svg)](https://doi.org/10.5281/zenodo.24125265)
-[![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff)
-[![Licence: GPL-2.0-only, core/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org)
-[![Colony Arena: HOPNET](https://img.shields.io/badge/Colony%20Arena-project%20page-orange)](https://swarm-routing.github.io/projects/HOPNET/)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/swarm-routing/HOPNET/badge)](https://scorecard.dev/viewer/?uri=github.com/swarm-routing/HOPNET)
-[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue?logo=cplusplus)](AGENTS.md)
-[![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org)
-[![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev)
-[![codecov](https://codecov.io/gh/swarm-routing/HOPNET/graph/badge.svg)](https://codecov.io/gh/swarm-routing/HOPNET)
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/HOPNET?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2FHOPNET&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+| Group | Badges |
+| --- | --- |
+| Build | [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev) |
+| Quality | [![codecov](https://codecov.io/gh/swarm-routing/HOPNET/graph/badge.svg)](https://codecov.io/gh/swarm-routing/HOPNET) [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/HOPNET?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2FHOPNET&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai) |
+| Release | [![Release](https://img.shields.io/github/v/release/swarm-routing/HOPNET?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/HOPNET/releases) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24125265.svg)](https://doi.org/10.5281/zenodo.24125265) [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff) [![Licence: GPL-2.0-only, core/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md) |
+| Trust | [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/swarm-routing/HOPNET/badge)](https://scorecard.dev/viewer/?uri=github.com/swarm-routing/HOPNET) |
+| Stack | [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue?logo=cplusplus)](AGENTS.md) [![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org) |
+| Community & docs | [![Colony Arena: HOPNET](https://img.shields.io/badge/Colony%20Arena-project%20page-orange)](https://swarm-routing.github.io/projects/HOPNET/) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org) |
 <!-- org-sync:end badges -->
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
