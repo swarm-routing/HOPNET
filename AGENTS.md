@@ -95,9 +95,10 @@ supports (ns-3's `CMAKE_CXX_STANDARD_MINIMUM`, C++23 from ns-3.46), the same
 standard the ns-3 module compiles at inside ns-3 and the one swarm-core's
 `core/` targets (swarm-routing/ns3-swarm-core#141, its `docs/api-policy.md`
 "C++ standard"). `swarm::core` passes C++23 on as a compile feature from
-swarm-routing/ns3-swarm-core#142 on; a pin before it builds swarm-core's own
-sources at C++20 and passes on `cxx_std_20`, so `core/CMakeLists.txt` sets the
-standard here itself either way.
+swarm-routing/ns3-swarm-core#142 on; a swarm-core commit or release before it
+(v0.3.0 included) builds swarm-core's own sources at C++20 and passes on
+`cxx_std_20`, so `core/CMakeLists.txt` sets the standard here itself either
+way.
 When ns-3 raises its minimum, `core/CMakeLists.txt`'s `CMAKE_CXX_STANDARD`
 follows.
 
