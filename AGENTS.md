@@ -19,7 +19,8 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             hopnet-repair.cc (§4.3's local repair: the InterZone members for repair, notification and error ants),
             hopnet-data (the data header + wire codec), hopnet-observe.h (what the core reports to swarm-core's
             `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
-            test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: the release in swarm-core.lock)
+            hopnet-coreConfig.cmake.in + test/consumer-package/ (the CMake package hopnet-core: HOPNET_CORE_INSTALL with
+            HOPNET_CORE_SWARM_CORE_FROM_PACKAGE, #143); test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: the release in swarm-core.lock)
 ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-core:
   model/hopnet-header.*            the ant payload and the DataHeader right after each data packet's UDP header (core/'s codecs)
   model/hopnet-routing-protocol.*  the adapter: IntraZone + InterZone per node on SwarmRoutingBase (`&Observer()` to both, `kindNames()`

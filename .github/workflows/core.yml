@@ -40,6 +40,19 @@ jobs:
             -DSWARM_CORE_DIR="$PWD/build/core/_deps/swarm_core_src-src/core"
           cmake --build build/sanitized -j
           ctest --test-dir build/sanitized --output-on-failure
+      - name: The CMake package hopnet-core (find_package, swarm-core from its package; swarm-routing/.github#436)
+        run: |
+          prefix="$PWD/build/prefix"
+          cmake -S build/core/_deps/swarm_core_src-src/core -B build/swarm-core-pkg -DCMAKE_BUILD_TYPE=Release -DSWARM_CORE_TESTS=OFF
+          cmake --build build/swarm-core-pkg -j "$(nproc)" && cmake --install build/swarm-core-pkg --prefix "$prefix"
+          cmake -S core -B build/pkg -DCMAKE_BUILD_TYPE=Release -DHOPNET_CORE_SWARM_CORE_FROM_PACKAGE=ON \
+            -DHOPNET_CORE_INSTALL=ON -DHOPNET_CORE_TESTS=OFF -DCMAKE_PREFIX_PATH="$prefix"
+          cmake --build build/pkg -j "$(nproc)" && cmake --install build/pkg --prefix "$prefix"
+          for f in lib/libhopnet_core.a lib/cmake/hopnet-core/hopnet-coreConfig.cmake lib/cmake/hopnet-core/hopnet-coreConfigVersion.cmake lib/cmake/hopnet-core/hopnet-coreTargets.cmake; do
+            test -f "$prefix/$f" || { echo "::error::the install has no $f"; exit 1; }
+          done
+          cmake -S core/test/consumer-package -B build/consumer -DCMAKE_PREFIX_PATH="$prefix"
+          cmake --build build/consumer && build/consumer/consumer
 
   core-format:
     runs-on: ubuntu-24.04

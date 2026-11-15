@@ -13,8 +13,28 @@
 # SWARM_CORE_DIR: a local swarm-core core/ directory (development against an
 # unreleased swarm-core); empty fetches the release ../swarm-core.lock names.
 # HOPNET_CORE_SANITIZE=ON adds ASan + UBSan, as the sanitized CI leg.
+# HOPNET_CORE_TESTS builds the tests (ON at the top level).
+# HOPNET_CORE_SWARM_CORE_FROM_PACKAGE=ON takes swarm-core from an installed
+# package (find_package(swarm-core CONFIG), e.g. its vcpkg port) instead of
+# the lock; HOPNET_CORE_INSTALL=ON (which needs it) adds the install rules and
+# the CMake package hopnet-core: find_package(hopnet-core CONFIG REQUIRED) gives the
+# imported target hopnet::core (swarm-routing/.github#436, the vcpkg port).
+# HOPNET_CORE_VERSION is the package version (default: .cz.toml's, else 0.0.0).
 cmake_minimum_required(VERSION 3.20)
-project(hopnet_core LANGUAGES CXX)
+# The package version: .cz.toml's (Commitizen bumps it at each release), or
+# HOPNET_CORE_VERSION when core/ is built without it (a release tarball, a port).
+set(HOPNET_CORE_VERSION "" CACHE STRING "hopnet-core's package version; empty: .cz.toml's")
+if(HOPNET_CORE_VERSION)
+  set(_hopnet_core_version "${HOPNET_CORE_VERSION}")
+elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../.cz.toml")
+  file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/../.cz.toml" _hopnet_core_version REGEX "^version = " LIMIT_COUNT 1)
+  # a release bump of .cz.toml re-runs the configure step (the package version)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/../.cz.toml")
+  string(REGEX REPLACE "^version = \"([0-9.]+)\".*" "\\1" _hopnet_core_version "${_hopnet_core_version}")
+else()
+  set(_hopnet_core_version 0.0.0)
+endif()
+project(hopnet_core VERSION ${_hopnet_core_version} LANGUAGES CXX)
 
 # The C++ standard of the ns-3 release the org supports: ns-3's own
 # CMAKE_CXX_STANDARD_MINIMUM (C++23 from ns-3.46), the standard swarm-core's
@@ -27,6 +47,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SWARM_CORE_DIR "" CACHE PATH "swarm-core's core/ directory; empty: fetch the release swarm-core.lock names")
 option(HOPNET_CORE_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(_hopnet_core_top ON)
+else()
+  set(_hopnet_core_top OFF)
+endif()
+option(HOPNET_CORE_TESTS "Build the tests and register them with ctest" ${_hopnet_core_top})
+option(HOPNET_CORE_SWARM_CORE_FROM_PACKAGE "Take swarm-core from find_package(swarm-core CONFIG), not the lock" OFF)
+option(HOPNET_CORE_INSTALL "Add the install rules and the CMake package hopnet-core" OFF)
+if(HOPNET_CORE_INSTALL AND NOT HOPNET_CORE_SWARM_CORE_FROM_PACKAGE)
+  message(FATAL_ERROR "HOPNET_CORE_INSTALL needs HOPNET_CORE_SWARM_CORE_FROM_PACKAGE=ON: the package links an installed swarm-core")
+endif()
 
 # Sanitizer flags first: they are directory options, so swarm-core's sources,
 # added below, are instrumented too.
@@ -40,7 +71,9 @@ endif()
 # nothing else: no test target, no ctest entry, no -Werror on our sources
 # (swarm-routing/ns3-swarm-core#100; its README "Use core/ from another CMake
 # project").
-if(SWARM_CORE_DIR)
+if(HOPNET_CORE_SWARM_CORE_FROM_PACKAGE)
+  find_package(swarm-core CONFIG REQUIRED)
+elseif(SWARM_CORE_DIR)
   if(NOT EXISTS "${SWARM_CORE_DIR}/swarm-ports.h")
     message(FATAL_ERROR "SWARM_CORE_DIR=${SWARM_CORE_DIR} is not swarm-core's core/ directory")
   endif()
@@ -93,20 +126,70 @@ add_library(hopnet_core STATIC
   hopnet-intrazone.cc
   hopnet-repair.cc
 )
-target_include_directories(hopnet_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(hopnet::core ALIAS hopnet_core)
+# The installed package's imported target is hopnet::core too (EXPORT_NAME and
+# the export's NAMESPACE).
+set_target_properties(hopnet_core PROPERTIES EXPORT_NAME core)
+include(GNUInstallDirs)
+target_include_directories(hopnet_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/hopnet-core>)
+if(HOPNET_CORE_SANITIZE)
+  # The objects are instrumented, so whatever links them needs the sanitizer
+  # runtime: add_link_options above reaches this directory's targets only, not
+  # a consumer's (or an installed package's) executable.
+  target_link_options(hopnet_core INTERFACE -fsanitize=address,undefined)
+endif()
 target_link_libraries(hopnet_core PUBLIC swarm::core)
 target_compile_options(hopnet_core PRIVATE ${HOPNET_WARNINGS})
 
-add_executable(hopnet_core_tests
-  test/run-core-tests.cc
-  test/test-interzone.cc
-  test/test-intrazone.cc
-  test/test-observer.cc
-  test/test-repair.cc
-  test/test-wire.cc
-)
-target_link_libraries(hopnet_core_tests PRIVATE hopnet_core)
-target_compile_options(hopnet_core_tests PRIVATE ${HOPNET_WARNINGS})
+if(HOPNET_CORE_TESTS)
+  add_executable(hopnet_core_tests
+    test/run-core-tests.cc
+    test/test-interzone.cc
+    test/test-intrazone.cc
+    test/test-observer.cc
+    test/test-repair.cc
+    test/test-wire.cc
+  )
+  target_link_libraries(hopnet_core_tests PRIVATE hopnet_core)
+  target_compile_options(hopnet_core_tests PRIVATE ${HOPNET_WARNINGS})
 
-enable_testing()
-add_test(NAME hopnet-core COMMAND hopnet_core_tests)
+  enable_testing()
+  add_test(NAME hopnet-core COMMAND hopnet_core_tests)
+endif()
+
+if(HOPNET_CORE_INSTALL)
+  include(CMakePackageConfigHelpers)
+  set(_hopnet_core_cmake_dir ${CMAKE_INSTALL_LIBDIR}/cmake/hopnet-core)
+  install(TARGETS hopnet_core EXPORT hopnet-coreTargets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(FILES
+    hopnet-ant.h
+    hopnet-config.h
+    hopnet-data.h
+    hopnet-interzone-table.h
+    hopnet-interzone.h
+    hopnet-intrazone-table.h
+    hopnet-intrazone.h
+    hopnet-observe.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hopnet-core)
+  install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/hopnet-core)
+  install(EXPORT hopnet-coreTargets NAMESPACE hopnet:: DESTINATION ${_hopnet_core_cmake_dir})
+  configure_package_config_file(hopnet-coreConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/hopnet-coreConfig.cmake
+    INSTALL_DESTINATION ${_hopnet_core_cmake_dir})
+  # As swarm-core (its docs/api-policy.md): before 1.0 any minor may break,
+  # so a 0.y release satisfies a request for 0.y only; from 1.0, its major.
+  if(PROJECT_VERSION_MAJOR EQUAL 0)
+    set(_hopnet_core_compat SameMinorVersion)
+  else()
+    set(_hopnet_core_compat SameMajorVersion)
+  endif()
+  write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/hopnet-coreConfigVersion.cmake
+    COMPATIBILITY ${_hopnet_core_compat})
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/hopnet-coreConfig.cmake
+                ${CMAKE_CURRENT_BINARY_DIR}/hopnet-coreConfigVersion.cmake
+          DESTINATION ${_hopnet_core_cmake_dir})
+endif()
