@@ -36,13 +36,14 @@ on):
 git clone https://github.com/swarm-routing/HOPNET.git
 git clone --branch "$(sed -n 's/^SWARM_CORE_TAG=//p' HOPNET/swarm-core.lock)" \
     https://github.com/swarm-routing/ns3-swarm-core.git
+# only for the comparison harness ("Run"): ns3-tools at the release ns3.yml names
+git clone --branch "$(sed -n 's#.*routing-bench=swarm-routing/ns3-tools@\(v[^:]*\):.*#\1#p' HOPNET/.github/workflows/ns3.yml | head -1)" \
+    https://github.com/swarm-routing/ns3-tools.git
 cd HOPNET
 ```
 
-To run the comparison harness as well (see "Run"), clone
-swarm-routing/ns3-tools next to them too, at the release `ns3.yml` names
-(`git clone --branch v1.0.0 https://github.com/swarm-routing/ns3-tools.git`
-today). There are no submodules.
+All three checkouts sit side by side; the commands below mount them as
+`../ns3-swarm-core` and `../ns3-tools`. There are no submodules.
 
 ## Dependencies
 
