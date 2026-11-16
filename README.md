@@ -8,7 +8,7 @@
 | Release | [![Release](https://img.shields.io/github/v/release/swarm-routing/HOPNET?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/HOPNET/releases) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24125265.svg)](https://doi.org/10.5281/zenodo.24125265) [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff) [![Licence: GPL-2.0-only, core/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md) |
 | Trust | [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/swarm-routing/HOPNET/badge)](https://scorecard.dev/viewer/?uri=github.com/swarm-routing/HOPNET) |
 | Stack | [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue?logo=cplusplus)](AGENTS.md) [![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org) |
-| Community & docs | [![Colony Arena: HOPNET](https://img.shields.io/badge/Colony%20Arena-project%20page-orange)](https://swarm-routing.github.io/projects/HOPNET/) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org) |
+| Community & docs | [![Colony Arena: HOPNET](https://img.shields.io/badge/Colony%20Arena-project%20page-orange)](https://swarm-routing.github.io/projects/HOPNET/) [![Open RCAPA](https://img.shields.io/github/issues/swarm-routing/HOPNET/rcapa?label=open%20RCAPA&color=blue)](https://github.com/swarm-routing/HOPNET/blob/main/docs/rcapa/README.md) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org) |
 <!-- org-sync:end badges -->
 
 HOPNET (Wang, 2007) as a standalone swarm routing protocol for MANETs: ant-colony routing over routing zones, ants hopping between zones. A simulator-agnostic `core/` plus the ns-3 contrib module `hopnet` on [`swarm-core`](https://github.com/swarm-routing/ns3-swarm-core).
@@ -48,6 +48,9 @@ the tools to install, how to get the code and its dependencies, how to
 build, test, run and lint it, the Docker images, what CI checks and how to
 read a red run. How changes are proposed, reviewed and released is the org's
 [CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md).
+A regression in a released version gets an RCAPA (root cause analysis with
+corrective and preventive actions): [docs/rcapa/README.md](docs/rcapa/README.md)
+is this project's flow and its index.
 <!-- org-sync:end develop -->
 
 ## Epics
