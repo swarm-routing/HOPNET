@@ -19,8 +19,8 @@ core/       simulator-agnostic algorithm + unit tests (no ns-3 headers; MIT OR G
             hopnet-repair.cc (§4.3's local repair: the InterZone members for repair, notification and error ants),
             hopnet-data (the data header + wire codec), hopnet-observe.h (what the core reports to swarm-core's
             `IRouterObserver`, #40; `kindNames()` in hopnet-ant is the table the ns-3 module registers);
-            hopnet-coreConfig.cmake.in + test/consumer-package/ (the CMake package hopnet-core: HOPNET_CORE_INSTALL with
-            HOPNET_CORE_SWARM_CORE_FROM_PACKAGE, #143); test/ (ctest); built on swarm-core's dual-licensed core/ primitives (pinned: the release in swarm-core.lock)
+            hopnet-coreConfig.cmake.in + test/consumer-package/ (the CMake package hopnet-core: HOPNET_CORE_INSTALL, on
+            swarm-core's package, #143); test/ (ctest); built on swarm-core's dual-licensed core/ primitives (its vcpkg port, at the release swarm-core.lock names; swarm-routing/.github#489)
 ns3/        contrib module `hopnet` (GPL-2.0-only), compiling core/ on swarm-core:
   model/hopnet-header.*            the ant payload and the DataHeader right after each data packet's UDP header (core/'s codecs)
   model/hopnet-routing-protocol.*  the adapter: IntraZone + InterZone per node on SwarmRoutingBase (`&Observer()` to both, `kindNames()`
@@ -41,9 +41,9 @@ tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke agains
 CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, again under ASan + UBSan; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks, and `.github/workflows/ns3.yml`: [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) builds `ns3/` in `ns3-dev:latest-{debug,sanitized}` with strict warnings and coverage (Sonar off until the repository has a project, swarm-routing/.github#104), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@<swarm-core.lock's tag>` and `routing-bench=swarm-routing/ns3-tools@<an ns3-tools release>:ns3/routing-bench` (releases; the same at `@main` in `canary-dependencies`, a non-blocking leg outside PRs), runs `test.py -s hopnet`, `routing-compare --scenario=paper --nNodes=20 --time=30 --runs=1 --protocols=hopnet` as the delivery smoke and `hopnet-example --seed={seed}` as the determinism program. Locally:
 
 ```bash
-make core-test   # core/ alone: cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
-cmake -S core -B build/sanitized -DHOPNET_CORE_SANITIZE=ON && cmake --build build/sanitized && ctest --test-dir build/sanitized   # as CI
-cmake -S core -B build/local -DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core   # a local swarm-core instead of the pin
+make core-test VCPKG_ROOT=/path/to/vcpkg   # core/ alone: cmake -S core -B build/core -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake, build, ctest
+cmake -S core -B build/sanitized -DHOPNET_CORE_SANITIZE=ON -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" && cmake --build build/sanitized && ctest --test-dir build/sanitized   # as CI
+cmake -S core -B build/local -DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core   # a local swarm-core instead of the port
 make help    # the org's standard target names: build, test, lint, format, check, clean, shell, ci
 make check   # everything CI gates on
 make test    # core-test, then the ns-3 module in ns3-dev:latest-debug (SWARM_CORE_NS3=<checkout>, default ../ns3-swarm-core):
@@ -106,32 +106,42 @@ follows.
 <!-- org-sync:begin dependencies -->
 ## How this repository gets swarm-core and ns3-tools
 
-- **swarm-core's `core/`**: `swarm-core.lock` names one swarm-core release
-  (repository, tag, the commit the tag names, version, and the SHA256 of
-  `swarm-core-<ver>.tar.gz` from the release's `SHA256SUMS`);
-  `core/CMakeLists.txt` reads it and fetches the tarball with CMake
-  `FetchContent` `URL` + `URL_HASH`. The `Makefile` and the ns-3
-  dependency name the lock's tag; `core-deps` (the licence boundary is pinned
-  by commit, org rule 2) and a benchmark cell's dependency (its build mode
-  takes a commit) name the commit the tag names.
-- **Bumping**: never by hand. The `swarm-core / pin` check (swarm-routing/.github
-  `tools/checks/check-swarm-core-pin.py`, lock mode) verifies the lock against
-  the release and fails when a newer swarm-core release is out; org-bot's
-  `swarm-core-pin` task then opens the bump PR (`org-bot/swarm-core-pin`) with
-  the lock written from that release and the tag and its commit moved on
-  every line above, the `swarm-core=` dependency of
-  `.github/workflows/benchmark-cell.yml` (the commit) included. Between releases nothing moves.
-  With swarm-routing/.github checked out next to this repository,
-  `python3 -I ../.github/tools/checks/release_lock.py verify swarm-core.lock`
-  checks it locally.
-- **The ns-3 build**: `dependencies` of `reusable-ns3-ci.yml` names release
+- **swarm-core's `core/`**: through vcpkg in manifest mode (swarm-routing/.github#489),
+  so CI builds against the published port. `vcpkg.json` depends on `swarm-core`
+  and pins its version and port-version with an `overrides` entry;
+  `vcpkg-configuration.json` takes the port from
+  [swarm-routing/vcpkg-registry](https://github.com/swarm-routing/vcpkg-registry)
+  at a `baseline` commit (the port's version and the SHA512 of its release
+  asset) and vcpkg's helper ports from the builtin registry.
+  `core/CMakeLists.txt` calls `find_package(swarm-core CONFIG REQUIRED)`
+  (imported target `swarm::core`); configure it with the vcpkg toolchain,
+  `-DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"`.
+  The core CI job sets vcpkg up with swarm-routing/.github's `setup-vcpkg`
+  action (the tool at a pinned commit, the binary cache on the org's GitHub
+  Packages NuGet feed; the job needs `packages: write`).
+- **The ns-3 build and the lock**: vcpkg has no ns-3 port, so the ns-3 build
+  keeps the release tag. `swarm-core.lock` names that release (repository,
+  tag, the commit the tag names, version, and the SHA256 of
+  `swarm-core-<ver>.tar.gz` from the release's `SHA256SUMS`); the `Makefile`
+  and the ns-3 dependency name its tag; `core-deps` (the licence boundary is
+  pinned by commit, org rule 2) and a benchmark cell's dependency (its build
+  mode takes a commit) name the commit the tag names.
+- **One version**: the `swarm-core / pin` check (swarm-routing/.github
+  `tools/checks/check-swarm-core-pin.py`, vcpkg mode) verifies the lock against
+  the release, that the override pins the lock's version, and that the
+  registry baseline is a commit on the registry's `main` holding exactly that
+  version and port-version; it fails when a newer swarm-core release is out.
+- **Bumping**: never by hand. org-bot's `swarm-core-pin` task opens one PR
+  (`org-bot/swarm-core-pin`) that writes the lock from the new release, moves
+  the tag and its commit on every line above, the override, and the registry
+  baseline to the registry's `main`, once that `main` holds the release (its
+  port PR merged; until then it waits). Between releases nothing moves.
+- **The ns-3 canary**: `dependencies` of `reusable-ns3-ci.yml` names release
   tags; `canary-dependencies` names `@main`, one non-blocking leg on push,
   schedule and dispatch, never on a PR (swarm-routing/.github#411). A red
   canary on `main` means the next release of a dependency needs work here.
 - **Working against an unreleased swarm-core**: `-DSWARM_CORE_DIR=<checkout>/core`
-  builds `core/` on a local checkout instead of the lock (development only).
-- **Later**: `find_package(swarm-core CONFIG)` from an installed release, then
-  a vcpkg registry (swarm-routing/ns3-swarm-core#135).
+  builds `core/` on a local checkout instead of the port (development only).
 <!-- org-sync:end dependencies -->
 
 ## Golden rules (invariants — do not break)
@@ -490,7 +500,7 @@ because the issue threads were thorough. Caveman the chat, not the record.
 | Know which release a piece of work serves, or why something is not planned | [`docs/roadmap.md`](docs/roadmap.md) (the release ladder; issues carry `release:` labels) |
 | The plan | swarm-routing/.github#52, org ROADMAP "Protocol repositories" |
 | The source | Wang, *HOPNET* (2007 thesis), [UManitoba MSpace](https://mspace.lib.umanitoba.ca/bitstream/1993/20935/1/Wang_HOPNET_a.pdf); AntHocNet `docs/research-landscape-2026.md` (Other swarm protocols) |
-| Shared primitives | `swarm-routing/ns3-swarm-core`; `core/` fetches its `core/` from the release `swarm-core.lock` names (`URL` + `URL_HASH`, swarm-routing/ns3-swarm-core#134); never bumped by hand: the `swarm-core / pin` check (`swarm-core-pin.yml`) fails when a newer release is out and org-bot opens the bump PR |
+| Shared primitives | `swarm-routing/ns3-swarm-core`; `core/` takes it from its vcpkg port (`vcpkg.json`, `vcpkg-configuration.json`, swarm-routing/.github#489) at the release `swarm-core.lock` names, the release the ns-3 build uses (swarm-routing/ns3-swarm-core#134); never bumped by hand: the `swarm-core / pin` check (`swarm-core-pin.yml`) fails when a newer release is out and org-bot opens the bump PR |
 | The core's readings and parameters | `docs/fidelity.md`, the accepted pre-registration on #5, `core/hopnet-config.h` |
 | Why the anchor is recorded as not reproduced (the pilots, their numbers, what the thesis leaves open) | [`docs/anchor-verdict.md`](docs/anchor-verdict.md), the results on #5 |
 | Benchmark against AntHocNet, ARA, AODV, OLSR | `swarm-routing/ns3-tools` arenas, results into `swarm-routing/benchmarks` |

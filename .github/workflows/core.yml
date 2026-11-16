@@ -4,8 +4,11 @@ name: Core
 
 # core/ on its own (no ns-3 tree): the org's strict warnings as errors, the
 # unit tests under ctest, the same under ASan + UBSan, and clang-format with the
-# org style. swarm-core's primitives come from the release
-# swarm-core.lock names. The ns-3 module (ns3/) runs in ns3.yml, on
+# org style. swarm-core's primitives come from its vcpkg port
+# (swarm-routing/.github#489): vcpkg.json pins the version swarm-core.lock
+# names, vcpkg-configuration.json the swarm-routing/vcpkg-registry baseline,
+# and swarm-routing/.github's setup-vcpkg action gives the tool (its binary
+# cache on GitHub Packages is off here, see the step). The ns-3 module (ns3/) runs in ns3.yml, on
 # reusable-ns3-ci.yml. Check names (stable, for required_checks): core-test, core-format.
 on:
   push:
@@ -29,29 +32,46 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build (strict warnings as errors) and test
+      - name: vcpkg (swarm-routing/.github#489)
+        id: vcpkg
+        uses: swarm-routing/.github/.github/actions/setup-vcpkg@main
+        timeout-minutes: 8
+        with:
+          # The NuGet cache needs mono on the runner (28-50 s to install); the
+          # three ports it would restore build in about 5 s, so here it costs
+          # more than it saves (measured on swarm-routing/ARA#176,
+          # swarm-routing/.github#489). Turn it on when the ports grow.
+          binary-cache: 'off'
+      # one vcpkg_installed for every configure below: the port is installed once
+      - name: Build (strict warnings as errors) and test (swarm-core from its vcpkg port)
+        env:
+          TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
-          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug
+          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$PWD/build/vcpkg_installed"
           cmake --build build/core -j
           ctest --test-dir build/core --output-on-failure
-      - name: Build and test under ASan + UBSan
+      - name: Build and test under ASan + UBSan (HOPNET instrumented, swarm-core the port as published)
+        env:
+          TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
           cmake -S core -B build/sanitized -DCMAKE_BUILD_TYPE=Debug -DHOPNET_CORE_SANITIZE=ON \
-            -DSWARM_CORE_DIR="$PWD/build/core/_deps/swarm_core_src-src/core"
+            -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$PWD/build/vcpkg_installed"
           cmake --build build/sanitized -j
           ctest --test-dir build/sanitized --output-on-failure
-      - name: The CMake package hopnet-core (find_package, swarm-core from its package; swarm-routing/.github#436)
+      - name: The CMake package hopnet-core (find_package, on the swarm-core port; swarm-routing/.github#436)
+        env:
+          TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
           prefix="$PWD/build/prefix"
-          cmake -S build/core/_deps/swarm_core_src-src/core -B build/swarm-core-pkg -DCMAKE_BUILD_TYPE=Release -DSWARM_CORE_TESTS=OFF
-          cmake --build build/swarm-core-pkg -j "$(nproc)" && cmake --install build/swarm-core-pkg --prefix "$prefix"
-          cmake -S core -B build/pkg -DCMAKE_BUILD_TYPE=Release -DHOPNET_CORE_SWARM_CORE_FROM_PACKAGE=ON \
-            -DHOPNET_CORE_INSTALL=ON -DHOPNET_CORE_TESTS=OFF -DCMAKE_PREFIX_PATH="$prefix"
+          installed="$PWD/build/vcpkg_installed"
+          cmake -S core -B build/pkg -DCMAKE_BUILD_TYPE=Release -DHOPNET_CORE_INSTALL=ON -DHOPNET_CORE_TESTS=OFF \
+            -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$installed"
           cmake --build build/pkg -j "$(nproc)" && cmake --install build/pkg --prefix "$prefix"
           for f in lib/libhopnet_core.a lib/cmake/hopnet-core/hopnet-coreConfig.cmake lib/cmake/hopnet-core/hopnet-coreConfigVersion.cmake lib/cmake/hopnet-core/hopnet-coreTargets.cmake; do
             test -f "$prefix/$f" || { echo "::error::the install has no $f"; exit 1; }
           done
-          cmake -S core/test/consumer-package -B build/consumer -DCMAKE_PREFIX_PATH="$prefix"
+          cmake -S core/test/consumer-package -B build/consumer -DCMAKE_PREFIX_PATH="$prefix;$installed/x64-linux"
           cmake --build build/consumer && build/consumer/consumer
 
   core-format:

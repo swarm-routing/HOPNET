@@ -12,8 +12,8 @@ name: ns-3
 # (swarm-routing/ns3-tools) is built beside it so the harness arm
 # (ns3/helper/hopnet-bench-arms.cc) compiles and runs.
 #
-# core/ also builds alone against the swarm-core release swarm-core.lock names
-# (core.yml). This module builds on the same release (the tag in `dependencies`,
+# core/ also builds alone against the same swarm-core release, from its vcpkg
+# port (core.yml; swarm-routing/.github#489). This module builds on the same release (the tag in `dependencies`,
 # and in core-deps below); `canary-dependencies` builds on swarm-core and
 # ns3-tools main in one non-blocking leg on push, schedule and dispatch, never on
 # a PR (swarm-routing/.github#411). The `swarm-core / pin` check keeps every tag

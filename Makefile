@@ -68,8 +68,14 @@ check: lint test headers org-sync-check ## everything CI gates on
 
 ci: check ## exactly what CI runs
 
-core-test: ## core/ alone, no ns-3: CMake + ctest with CI's strict warnings
-	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure
+# core/ takes swarm-core from its vcpkg port (vcpkg.json, vcpkg-configuration.json):
+# VCPKG_ROOT is a vcpkg checkout; SWARM_CORE_DIR=<swarm-core checkout>/core builds on it instead.
+VCPKG_ROOT ?=
+SWARM_CORE_DIR ?=
+core-test: ## core/ alone, no ns-3: CMake (vcpkg toolchain) + ctest with CI's strict warnings
+	@[ -n "$(SWARM_CORE_DIR)$(VCPKG_ROOT)" ] || { echo "make core-test: set VCPKG_ROOT (a vcpkg checkout) or SWARM_CORE_DIR (a swarm-core checkout's core/)" >&2; exit 2; }
+	cmake -S core -B build/core $(if $(SWARM_CORE_DIR),-DSWARM_CORE_DIR=$(SWARM_CORE_DIR),-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake) \
+		&& cmake --build build/core && ctest --test-dir build/core --output-on-failure
 
 # The release asset for swarm-routing/.github's reusable-release.yml, which sets
 # RELEASE_VERSION (locally: .cz.toml's version). A git archive of the commit, so
