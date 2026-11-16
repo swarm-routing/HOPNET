@@ -16,10 +16,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "dry-run: bump, build, attest and verify on the runner only; bump: open the bump PR (merging it releases)"
+        description: "dry-run: bump, build, attest and verify on the runner only; bump: open the bump PR (merging it releases); release-notes: re-render the notes of the release `tag` from CHANGELOG.md"
         type: choice
-        options: [dry-run, bump]
+        options: [dry-run, bump, release-notes]
         default: dry-run
+      tag:
+        description: "release-notes only: the existing release whose notes are re-rendered, vX.Y.Z (swarm-routing/.github#524)"
+        type: string
+        default: ''
   push:
     branches: [main]   # the merged bump PR releases; any other push is a no-op
 permissions:
@@ -37,6 +41,7 @@ jobs:
     uses: swarm-routing/.github/.github/workflows/reusable-release.yml@main
     with:
       mode: ${{ inputs.mode }}   # empty on push: release
+      tag: ${{ inputs.tag }}   # release-notes only; '' on push (swarm-routing/.github#524)
       vcpkg-ports: hopnet-core   # after publish, the org bot opens the port PR in swarm-routing/vcpkg-registry (swarm-routing/.github#439)
     secrets:
       BOT_APP_ID: ${{ secrets.BOT_APP_ID }}
