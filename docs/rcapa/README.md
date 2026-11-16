@@ -1,50 +1,49 @@
 # RCAPA: regressions in a release of swarm-routing/HOPNET
 
 An **RCAPA** (root cause analysis with corrective and preventive actions) is
-the full record of one **regression in a published release** of this
-project: something that worked in a released version and broke after a
-change. A bug or change that never reached a release needs none (an
-ordinary `bug` issue is enough), and an upstream ns-3 bug is an `NS3-NNN` in
-swarm-routing/ns3-tools. The org's rule and its decision table are in
+the full record of one **regression in a published library**: a version of
+it that another project consumes (a release pinned by a lock, PyPI, a vcpkg
+port) worked, and a later one broke. A bug or change that never reached a
+published version needs none (an ordinary `bug` issue is enough), a Docker
+image needs one only when its composition is the cause, and an upstream
+ns-3 bug is an `NS3-NNN` in swarm-routing/ns3-tools. The org's rule and its decision table are in
 [CONTRIBUTING.md, "RCAPA"](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md#rcapa)
 ([ADR-0003](https://github.com/swarm-routing/.github/blob/main/docs/adr/0003-rcapa-for-ns3-bugs-and-released-regressions.md)).
 This page is the project's flow and its index.
 
 ## The flow for this project
 
-A **published release** of HOPNET is a `v*` tag of this repository: its
-GitHub release, archived on Zenodo (concept DOI
-[10.5281/zenodo.24125265](https://doi.org/10.5281/zenodo.24125265)); its `hopnet-core` port waits in swarm-routing/vcpkg-registry `templates/` until a release installs `core/` as a CMake package. A
-regression is something that worked in one of those releases and broke
-after a change, whenever it is found, also on `main` before the next tag.
-A defect introduced after the last tag and fixed before the next one never
-reached a release: it needs no RCAPA, an ordinary `bug` issue is enough.
-Whether a commit reached a release is read from
-`git tag --contains <commit>`.
+The library other projects would consume from HOPNET is its simulator-free
+`core/`, through the `hopnet-core` vcpkg port. That port is not published yet (it
+waits in swarm-routing/vcpkg-registry `templates/` until a release installs
+`core/` as a CMake package), so **RCAPA does not apply yet**: the flow below
+starts with the first published port version. The ns-3 module, the GitHub
+releases and their Zenodo DOIs are not consumed at a version by another
+project; a defect there is an ordinary `bug` issue.
 
 | | |
 |---|---|
-| Published as | `v*` tags: GitHub release + Zenodo DOI; its `hopnet-core` port waits in swarm-routing/vcpkg-registry `templates/` until a release installs `core/` as a CMake package |
+| Published as | nothing yet: the `hopnet-core` vcpkg port, from its first published version |
 | ID prefix | `HOP-NNN` |
-| Ticket | an issue in swarm-routing/HOPNET, form *Regression in a release (RCAPA)*, title `[rcapa] HOP-NNN <short description>`, labels `rcapa` and `bug` |
-| Verified by | the reproducer against the failing tag and the last good one: `make core-test` (`core.yml`: ctest, strict warnings, ASan + UBSan), the ns-3 module's suite and the `routing-compare` delivery smoke of `ns3.yml` |
-| Corrective action | the fix PR with a test, in the layer that shows the defect, that fails without it: a core test in `core/test/` for core behaviour, an ns-3 suite case in `ns3/test/` for the adapter; a wire-format change bumps the version byte (golden rule 3); then a release bump |
-| Preventive action | the test or check that would have caught it before the tag (a core test, a fuzz case, an ns-3 suite case, the delivery smoke); a fidelity row in `docs/fidelity.md` corrected if the reading was wrong |
-| Closes when | the fix is merged **and** a `v*` release carries it (tag and version DOI read from Zenodo) |
+| Ticket | an issue in swarm-routing/HOPNET, form *Regression in a release (RCAPA)*, title `[rcapa] HOP-NNN <short description>`, labels `rcapa` and `bug`, opened from the consumer's finding |
+| Verified by | the consumer's failing build or test against the `hopnet-core` version that broke and the one before it; then `make core-test` (`core.yml`: ctest, strict warnings, ASan + UBSan) |
+| Corrective action | the fix PR with a core test in `core/test/` that fails without it; a wire-format change bumps the version byte (golden rule 3); then a release and the port bump org-bot opens in swarm-routing/vcpkg-registry |
+| Preventive action | the core test or fuzz case that would have caught it, and a consumer case in swarm-routing/vcpkg-registry `test/consumer/` if only a consumer showed it |
+| Closes when | a release carries the fix **and** the `hopnet-core` port is bumped to it, with the consumer green on the new baseline |
 
 ```mermaid
 sequenceDiagram
-    participant U as Reporter or campaign
+    participant C as A vcpkg consumer
     participant T as RCAPA ticket
-    participant G as core and ns-3 checks
+    participant G as core checks
     participant M as main
-    participant R as Release and Zenodo
-    U->>T: a released version behaves differently
-    T->>G: reproduce against the failing and last good release
+    participant R as HOPNET release and port bump
+    C->>T: a check that passed on the old version fails on the new one
+    T->>G: reproduce with the consumer's check, new version against old
     T->>M: fix with a test that fails without it
-    M->>G: the same check passes on main
-    M->>R: release bump carries the fix
-    R->>T: tag and DOI recorded, ticket closed
+    M->>R: a release carries the fix
+    R->>C: the consumer moves to it and runs green
+    C->>T: release and green run recorded, ticket closed
 ```
 
 ## Index
@@ -59,8 +58,9 @@ sequenceDiagram
 2. Copy [`_template.md`](_template.md) to `rcapa-<short-description>.md`
    (lowercase, hyphens: what breaks, not where it was found), and add its row
    to the index in the same pull request.
-3. The ticket stays open until the corrective action is merged **and a
-   release carries the fix**; record that release in the index.
+3. The ticket stays open until the corrective action is merged, a release
+   carries the fix, and the consumer that found it runs green on that
+   release; record the release in the index.
 
 ## What an RCAPA answers
 
