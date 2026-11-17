@@ -47,25 +47,30 @@ All three checkouts sit side by side; the commands below mount them as
 
 ## Dependencies
 
-- **swarm-core's `core/`** (the shared primitives): `swarm-core.lock` names
-  one swarm-core release, and `core/CMakeLists.txt` downloads its tarball by
-  URL and checks its SHA256. To work against a local, unreleased swarm-core,
-  configure with `-DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core`. Nobody
-  edits the lock by hand: the `swarm-core / pin` check fails when a newer
-  release is out, and the org bot opens the bump PR.
+- **swarm-core's `core/`** (the shared primitives): its vcpkg port, in
+  manifest mode (swarm-routing/.github#489). `vcpkg.json` pins the version
+  `swarm-core.lock` names, `vcpkg-configuration.json` the
+  swarm-routing/vcpkg-registry baseline, and `core/CMakeLists.txt` finds it
+  with `find_package(swarm-core CONFIG REQUIRED)`. You need a vcpkg checkout
+  (`git clone https://github.com/microsoft/vcpkg && vcpkg/bootstrap-vcpkg.sh`,
+  then `VCPKG_ROOT` pointing at it). `swarm-core.lock` stays the record of
+  the release the ns-3 build uses. To work against a local, unreleased
+  swarm-core, configure with `-DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core`.
+  Nobody edits the lock or the vcpkg pins by hand: the `swarm-core / pin`
+  check fails when a newer release is out, and the org bot opens the bump PR.
 - **ns-3**: from the `ns3-dev` image. The ns-3 module also needs the
   swarm-core ns-3 module (the checkout above) and, for the harness arm,
   ns3-tools' `routing-bench`; CI fetches both at release tags
   (`dependencies:` in `.github/workflows/ns3.yml`).
-- A vcpkg-based setup is planned (swarm-routing/.github#489); the
-  convention today is CONTRIBUTING "Dependencies".
+- The convention is CONTRIBUTING "Dependencies" (vcpkg mode).
 
 ## Build
 
 `core/` alone, with the same strict warnings as CI:
 
 ```bash
-cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug
+cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 cmake --build build/core -j
 ```
 
@@ -84,8 +89,8 @@ docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swa
 
 | What | Command | CI |
 | --- | --- | --- |
-| `core/` unit tests | `make core-test` | `core-test` / `core-format` (core.yml) |
-| `core/` under ASan + UBSan | `cmake -S core -B build/sanitized -DCMAKE_BUILD_TYPE=Debug -DHOPNET_CORE_SANITIZE=ON && cmake --build build/sanitized -j && ctest --test-dir build/sanitized --output-on-failure` | `core-test` / `core-format` |
+| `core/` unit tests | `make core-test VCPKG_ROOT=/path/to/vcpkg` | `core-test` / `core-format` (core.yml) |
+| `core/` under ASan + UBSan | `cmake -S core -B build/sanitized -DCMAKE_BUILD_TYPE=Debug -DHOPNET_CORE_SANITIZE=ON -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" && cmake --build build/sanitized -j && ctest --test-dir build/sanitized --output-on-failure` | `core-test` / `core-format` |
 | `core/` tests, then the ns-3 suites (`test.py -s hopnet` and swarm-core's), strict warnings as errors | `make test` | `ci / ns-latest debug` |
 | the same on the sanitized image | `make test NS3_IMAGE=ghcr.io/swarm-routing/ns3-dev:latest-sanitized` | `ci / ns-latest sanitized` |
 
@@ -159,7 +164,7 @@ make check            # lint, both test levels, headers and org-sync together
 | `ns3.yml` | `ci / ns-latest debug`, `ci / ns-latest sanitized` | the module builds with strict warnings on the swarm-core and ns3-tools releases, the test suites pass, the delivery smoke, determinism | yes |
 | `ns3.yml` | `ci / format` | clang-format-18 on every `.h`/`.cc` | yes |
 | `licence.yml` | `headers / licence` | licence headers; `core/` includes nothing outside the standard library and swarm-core's `core/` at the pinned commit | yes |
-| `swarm-core-pin.yml` | `swarm-core / pin` | `swarm-core.lock` matches its release and no newer release is out | yes |
+| `swarm-core-pin.yml` | `swarm-core / pin` | `swarm-core.lock` matches its release, `vcpkg.json`'s override and the registry baseline name the same version, and no newer release is out | yes |
 | `ns3.yml` | `codecov`, the canary leg | coverage upload; the build on the dependencies' `main` | no |
 | `benchmark-cell.yml` | | one benchmark cell, dispatched by `ns3-campaign` | no (manual) |
 | `org-sync.yml` | `check / org-sync` | the org-managed files match the templates | yes |
@@ -188,9 +193,9 @@ What each release must show is [roadmap.md](roadmap.md).
 - **The ns-3 build fails on a swarm-core symbol that CI does not complain
   about.** Your swarm-core checkout is on `main`, not the release in
   `swarm-core.lock`; check out that tag.
-- **The first `core/` configure fails offline.** It downloads swarm-core's
-  release tarball; configure once online, or point `SWARM_CORE_DIR` at a
-  checkout's `core/`.
+- **The first `core/` configure fails offline.** vcpkg downloads the
+  registry and swarm-core's release tarball; configure once online, or point
+  `SWARM_CORE_DIR` at a checkout's `core/`.
 - **A warning fails the build.** `--strict-warnings` turns warnings in this
   module's sources into errors (ns-3's and swarm-core's headers are exempt);
   `make core-test` uses the same flags for `core/`.
