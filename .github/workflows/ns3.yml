@@ -38,6 +38,12 @@ permissions:
   contents: read
   packages: read
 
+# A newer push to the same pull request cancels this run (swarm-routing/.github#505):
+# runners are shared by the whole org. Pushes, merge groups and dispatches run to the end.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@main
