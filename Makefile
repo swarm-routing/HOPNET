@@ -11,7 +11,7 @@ PLATFORM  ?=
 # container kind: the image's Dockerfile and its build arguments
 DOCKERFILE ?= Dockerfile
 BUILD_ARGS ?=
-# The org tooling (check-headers.py, org-sync): a shallow clone, refreshed to ORG_REF.
+# The org tooling (check-headers, org-sync): a shallow clone, refreshed to ORG_REF.
 ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
 ORG_REF   ?= main
 # swarm-core's core/ at the release swarm-core.lock names (its tag), for the include check.
@@ -59,7 +59,7 @@ swarm-core:  # swarm-core at SWARM_CORE_REF (swarm-core.lock's tag), for the inc
 	@git -C "$(SWARM_CORE_SRC)" fetch -q --depth 1 https://github.com/swarm-routing/ns3-swarm-core $(SWARM_CORE_REF) && git -C "$(SWARM_CORE_SRC)" checkout -q --detach FETCH_HEAD
 
 headers: org-tools swarm-core ## licence headers (org rule 1)
-	python3 -I "$(ORG_DIR)/tools/checks/check-headers.py" --dual core/ --core core/ --core-dep "$(SWARM_CORE_SRC)/core" .
+	"$(ORG_DIR)/tools/checks/check-headers.sh" --dual core/ --core core/ --core-dep "$(SWARM_CORE_SRC)/core" .
 
 org-sync-check: org-tools ## org-managed files match the org templates
 	python3 -I "$(ORG_DIR)/tools/org-sync/org_sync.py" check .
