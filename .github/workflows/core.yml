@@ -35,10 +35,16 @@ jobs:
         timeout-minutes: 2  # its download and start take seconds (swarm-routing/.github#164)
         with:
           egress-policy: audit
+      # a docs-only change skips the steps below; the check still reports (swarm-routing/.github#581)
+      - uses: swarm-routing/.github/.github/actions/changes@main
+        id: changes
+        timeout-minutes: 2
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.changes.outputs.docs-only != 'true'
         with:
           persist-credentials: false
       - name: vcpkg (swarm-routing/.github#489)
+        if: steps.changes.outputs.docs-only != 'true'
         id: vcpkg
         uses: swarm-routing/.github/.github/actions/setup-vcpkg@main
         timeout-minutes: 8
@@ -50,6 +56,7 @@ jobs:
           binary-cache: 'off'
       # one vcpkg_installed for every configure below: the port is installed once
       - name: Build (strict warnings as errors) and test (swarm-core from its vcpkg port)
+        if: steps.changes.outputs.docs-only != 'true'
         env:
           TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
@@ -58,6 +65,7 @@ jobs:
           cmake --build build/core -j
           ctest --test-dir build/core --output-on-failure
       - name: Build and test under ASan + UBSan (HOPNET instrumented, swarm-core the port as published)
+        if: steps.changes.outputs.docs-only != 'true'
         env:
           TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
@@ -66,6 +74,7 @@ jobs:
           cmake --build build/sanitized -j
           ctest --test-dir build/sanitized --output-on-failure
       - name: The CMake package hopnet-core (find_package, on the swarm-core port; swarm-routing/.github#436)
+        if: steps.changes.outputs.docs-only != 'true'
         env:
           TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
@@ -89,14 +98,21 @@ jobs:
         timeout-minutes: 2  # its download and start take seconds (swarm-routing/.github#164)
         with:
           egress-policy: audit
+      # a docs-only change skips the steps below; the check still reports (swarm-routing/.github#581)
+      - uses: swarm-routing/.github/.github/actions/changes@main
+        id: changes
+        timeout-minutes: 2
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.changes.outputs.docs-only != 'true'
         with:
           persist-credentials: false
       - name: Org .clang-format unless the repo ships its own
+        if: steps.changes.outputs.docs-only != 'true'
         run: |
           [ -f .clang-format ] || curl -fsSL -o .clang-format \
             https://raw.githubusercontent.com/swarm-routing/.github/main/.clang-format
       - name: clang-format-18 --dry-run -Werror
+        if: steps.changes.outputs.docs-only != 'true'
         run: |
           files=$(git ls-files '*.h' '*.cc' '*.cpp' '*.hpp')
           [ -z "$files" ] && { echo "no C++ files"; exit 0; }
