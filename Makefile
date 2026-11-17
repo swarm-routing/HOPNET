@@ -77,7 +77,7 @@ SWARM_CORE_DIR ?=
 CORE_BUILD = build/core$(if $(SWARM_CORE_DIR),-local)
 core-test: ## core/ alone, no ns-3: CMake (vcpkg toolchain) + ctest with CI's strict warnings
 	@[ -n "$(SWARM_CORE_DIR)$(VCPKG_ROOT)" ] || { echo "make core-test: set VCPKG_ROOT (a vcpkg checkout) or SWARM_CORE_DIR (a swarm-core checkout's core/)" >&2; exit 2; }
-	cmake -S core -B $(CORE_BUILD) $(if $(SWARM_CORE_DIR),-DSWARM_CORE_DIR=$(SWARM_CORE_DIR),-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake) \
+	cmake -S core -B $(CORE_BUILD) $(if $(SWARM_CORE_DIR),-DSWARM_CORE_DIR=$(SWARM_CORE_DIR),-DSWARM_CORE_DIR= -DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake) \
 		&& cmake --build $(CORE_BUILD) && ctest --test-dir $(CORE_BUILD) --output-on-failure
 
 # The release asset for swarm-routing/.github's reusable-release.yml, which sets
