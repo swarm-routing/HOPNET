@@ -11,9 +11,6 @@ PLATFORM  ?=
 # container kind: the image's Dockerfile and its build arguments
 DOCKERFILE ?= Dockerfile
 BUILD_ARGS ?=
-# The org tooling (check-headers, org-sync): a shallow clone, refreshed to ORG_REF.
-ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
-ORG_REF   ?= main
 # swarm-core's core/ at the release swarm-core.lock names (its tag), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
 SWARM_CORE_REF ?= v1.0.0
@@ -50,19 +47,12 @@ shell: ## an interactive shell in the dev image with this repo at /src
 	@command -v docker >/dev/null || { echo "make shell: docker not found (Docker Desktop, Colima, or docker.io)" >&2; exit 127; }
 	docker run --rm -it -v "$(CURDIR):/src" -w /src $(if $(PLATFORM),--platform $(PLATFORM)) $(NS3_IMAGE) bash
 
-org-tools:  # the same templates CI checks against: refreshed to ORG_REF every time
-	@[ -d "$(ORG_DIR)/.git" ] || { git init -q "$(ORG_DIR)" && git -C "$(ORG_DIR)" remote add origin https://github.com/swarm-routing/.github; }
-	@git -C "$(ORG_DIR)" fetch -q --depth 1 origin $(ORG_REF) && git -C "$(ORG_DIR)" checkout -q --detach FETCH_HEAD
-
 swarm-core:  # swarm-core at SWARM_CORE_REF (swarm-core.lock's tag), for the include check
 	@[ -d "$(SWARM_CORE_SRC)/.git" ] || git init -q "$(SWARM_CORE_SRC)"
 	@git -C "$(SWARM_CORE_SRC)" fetch -q --depth 1 https://github.com/swarm-routing/ns3-swarm-core $(SWARM_CORE_REF) && git -C "$(SWARM_CORE_SRC)" checkout -q --detach FETCH_HEAD
 
 headers: org-tools swarm-core ## licence headers (org rule 1)
 	"$(ORG_DIR)/tools/checks/check-headers.sh" --dual core/ --core core/ --core-dep "$(SWARM_CORE_SRC)/core" .
-
-org-sync-check: org-tools ## org-managed files match the org templates
-	python3 -I "$(ORG_DIR)/tools/org-sync/org_sync.py" check .
 
 check: lint test headers org-sync-check ## everything CI gates on
 
@@ -93,3 +83,32 @@ dist: ## the release asset in dist/: hopnet-<ver>.tar.gz
 		$$(git ls-tree --name-only HEAD core swarm-core.lock ns3 docs LICENSE LICENSE-MIT LICENSING.md README.md AGENTS.md Makefile CHANGELOG.md)
 	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/core/LICENSE'
 	tar -tzf dist/hopnet-$(RELEASE_VERSION).tar.gz | grep -qx 'hopnet-$(RELEASE_VERSION)/swarm-core.lock'
+
+# org-sync:begin org-tools
+# The org tooling (check-headers, org-sync): a shallow clone, refreshed to ORG_REF,
+# by default the template commit .github/org-sync.lock pins, as CI checks (#586).
+ORG_DIR   ?= $(HOME)/.cache/swarm-routing/dotgithub
+ORG_REF   ?= $(or $(shell sed -nE 's/^commit = "([0-9a-f]{40})"[[:space:]]*$$/\1/p' .github/org-sync.lock 2>/dev/null),main)
+# make pre-push TITLE='type(scope): subject': the PR title rule of reusable-pr-title.yml
+export TITLE
+TITLE_RE  := ^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: [^A-Z ](.*[^ ])?$$
+
+.PHONY: org-tools org-sync-check pre-push
+
+org-tools:  # the same templates CI checks against: refreshed to ORG_REF every time
+	@[ -d "$(ORG_DIR)/.git" ] || { git init -q "$(ORG_DIR)" && git -C "$(ORG_DIR)" remote add origin https://github.com/swarm-routing/.github; }
+	@git -C "$(ORG_DIR)" fetch -q --depth 1 origin $(ORG_REF) && git -C "$(ORG_DIR)" checkout -q --detach FETCH_HEAD
+
+org-sync-check: org-tools ## org-managed files match the org templates
+	python3 -I "$(ORG_DIR)/tools/org-sync/org_sync.py" check .
+
+pre-push: check ## before every push: make check, then TITLE='type(scope): subject' (the PR title)
+	@[ -n "$$TITLE" ] || { echo "make pre-push: pass TITLE='<the PR title>'" >&2; exit 2; }
+	@printf '%s\n' "$$TITLE" | grep -Eq '$(TITLE_RE)' || { echo "PR title is not a lowercase Conventional Commit: $$TITLE" >&2; exit 1; }
+	@echo "pre-push: ok ($$TITLE)"
+
+.PHONY: doctor
+doctor: ## this machine's tools against the versions CI runs (the org's tools/versions.env, go.mod), and the hosts the network steps need
+	@$(MAKE) -s org-tools || echo "doctor: could not refresh $(ORG_DIR) (offline?): using it as it is" >&2
+	@"$(ORG_DIR)/tools/doctor/doctor.sh" .
+# org-sync:end org-tools
