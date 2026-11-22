@@ -11,9 +11,12 @@ Licensed per directory, as AntHocNet
 | `core/test/consumer-package/` (the `find_package(hopnet-core)` consumer) | `MIT OR GPL-2.0-only` |
 | everything else (ns-3 modules, docs, data) | `GPL-2.0-only` |
 
-`MIT OR GPL-2.0-only` means you may use that code under either licence, at
-your option ([LICENSE-MIT](LICENSE-MIT) or [LICENSE](LICENSE)). Every source
-file carries its SPDX identifier; CI checks it (`reusable-licence-check.yml`).
+<!-- org-sync:begin licence-texts -->
+Texts: [`LICENSE`](LICENSE) (GPL-2.0) and [`LICENSE-MIT`](LICENSE-MIT) (the
+MIT option). Each source file states its licence in its
+`SPDX-License-Identifier` line; CI checks it
+(`swarm-routing/.github` `cmd/check-headers`; locally `make headers`).
+<!-- org-sync:end licence-texts -->
 
 The dependency only goes one way: GPL code may use `core/`, and a `core/` file
 includes only the C++ standard library, other `core/` files and the
