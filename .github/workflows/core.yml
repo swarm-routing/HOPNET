@@ -43,6 +43,14 @@ jobs:
         if: steps.changes.outputs.docs-only != 'true'
         with:
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.changes.outputs.docs-only != 'true'
+        with:
+          repository: swarm-routing/.github
+          path: .org
+          sparse-checkout: .clang-tidy
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
       - name: vcpkg (swarm-routing/.github#489)
         if: steps.changes.outputs.docs-only != 'true'
         id: vcpkg
@@ -60,10 +68,15 @@ jobs:
         env:
           TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
         run: |
-          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug \
+          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$PWD/build/vcpkg_installed"
           cmake --build build/core -j
           ctest --test-dir build/core --output-on-failure
+      - name: clang-tidy (org .clang-tidy, findings are errors; core/ sources, tests excluded; swarm-routing/.github#635)
+        if: steps.changes.outputs.docs-only != 'true'
+        timeout-minutes: 5
+        run: |
+          git ls-files 'core/*.cc' ':!core/test/**' | xargs clang-tidy-18 -p build/core --config-file=.org/.clang-tidy --warnings-as-errors='*' --header-filter="^$PWD/core/[^/]+\.h$" --quiet
       - name: Build and test under ASan + UBSan (HOPNET instrumented, swarm-core the port as published)
         if: steps.changes.outputs.docs-only != 'true'
         env:
