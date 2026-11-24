@@ -10,10 +10,8 @@ HOPNET is in wave D. Issue state is always truer than a checked-in diagram.
 
 ## How this plan is tracked
 
-Each issue a release gates will carry one **`release:` label**, so every row
-below is a live query. Until the labels are synced and applied (the release
-labels are being added to `labels.json` on 2026-11-11), a board may omit
-gating issues:
+Each issue a release gates carries one **`release:` label**, so every row
+below is a live query:
 
 | Release | Board |
 |---|---|
@@ -55,10 +53,10 @@ repositories use the cross-repo form.
 ```mermaid
 flowchart TB
     subgraph HOP["HOPNET"]
-        H5["<b>#5</b> local repair + ns-3 module<br/>(done, #85); its anchor is open"]
+        H5["<b>#5</b> local repair + ns-3 module<br/>(done, #85, #126)"]
         H40["#40 observer adoption<br/>(done)"]
         H28["#28 benchmark pipeline"]
-        ANCHOR["anchor vs AntHocNet<br/>or written infeasibility verdict"]
+        ANCHOR["anchor vs AntHocNet:<br/>written infeasibility verdict<br/>(done, #126)"]
         V02["<b>v0.2.0</b>"]
         H21["#21 fidelity review<br/>(2009 paper, Islam et al.)"]
         H41["#41 one intra-zone table"]
@@ -89,16 +87,20 @@ flowchart TB
 Done: §4.3's local repair and the ns-3 module (#85; it waited until ARA's
 built green against swarm-core, maintainer decision 2026-11-10, #3), the
 observer adoption (#40), and `ns3-campaign`, which the pipeline needs
-(swarm-routing/ns3-tools#81, closed). What still blocks v0.2.0: the
-benchmark pipeline (#28) and the anchor, the open criterion of #5, which
-pairs HOPNET with AntHocNet through ns3-tools.
+(swarm-routing/ns3-tools#81, closed). The anchor gave its verdict on
+2026-11-14: three pre-registered pilot rounds missed threshold A, so it is a
+written infeasibility verdict ([`anchor-verdict.md`](anchor-verdict.md),
+#126) and the anchor campaign itself was not run. What still blocks v0.2.0:
+the first box of the benchmark pipeline (#28), one change-test smoke
+dispatched through `ns3-campaign` with its verdicts from the script
+(`tools/bench/campaigns/smoke.yaml`, re-pinned in #219).
 
 ## What each release must show to ship
 
 | Release | Exit criteria |
 |---|---|
 | **v0.1.0** (shipped 2026-11-11) | `core/` (intra-zone and inter-zone halves) and `docs/fidelity.md`, released ungated by the maintainer's decision of 2026-11-10. |
-| **v0.2.0** "gated" | The ns-3 module `hopnet` is green on `ns3-dev:latest-{debug,sanitized}`; the swarm-core router observer is adopted ([#40](https://github.com/swarm-routing/HOPNET/issues/40)); the repository has its own benchmark pipeline, paired smoke and anchor campaigns on the org reusable cell workflow ([#28](https://github.com/swarm-routing/HOPNET/issues/28)); the anchor against AntHocNet gives a verdict, PASS or a written infeasibility verdict (org golden rule 6; this repo's rule 12); the fidelity unknowns that `core/` and the anchor depend on (zone radius, ant rates, the AntHocNet configuration the anchor pairs against) are each a repo choice or a recorded decision in `docs/fidelity.md`; unknowns only the 2009 paper can settle stay with the v0.3.0 review (#21). Scope: the rest of [#5](https://github.com/swarm-routing/HOPNET/issues/5) (§4.3 local repair, ns-3 module), #40, #28. |
+| **v0.2.0** "gated" | The ns-3 module `hopnet` is green on `ns3-dev:latest-{debug,sanitized}` (met: `ns3.yml` on `main`); the swarm-core router observer is adopted ([#40](https://github.com/swarm-routing/HOPNET/issues/40), met); the repository has its own benchmark pipeline on the org reusable cell workflow, with a paired change-test smoke dispatched and read by the scripts and the anchor's campaign plans ([#28](https://github.com/swarm-routing/HOPNET/issues/28): the workflow, `smoke.yaml` and the pilot plans are in; the smoke's dispatch is open); the anchor against AntHocNet gives a verdict, PASS or a written infeasibility verdict (org golden rule 6; this repo's rule 12; met: the written infeasibility verdict, [`anchor-verdict.md`](anchor-verdict.md), so HOPNET's numbers do not count in comparisons and the release notes say so); the fidelity unknowns that `core/` and the anchor depend on are each a repo choice or a recorded decision in `docs/fidelity.md` (met: zone radius 2 from [W07] p. 36; internal-ant period 2 s, reading (n); AntHocNet at its v2.7.0 release commit with its defaults, maintainer decision 2026-11-13); unknowns only the 2009 paper can settle stay with the v0.3.0 review (#21). Scope (`release:v0.2.0`): [#5](https://github.com/swarm-routing/HOPNET/issues/5) (closed), #40 (closed), #28 (open). Not in scope: #188 (the org's swarm-core / swarm-adapter-ns3 migration; the module already builds on swarm-adapter-ns3 v2.0.0, and its wire-header item gates v1.0.0's freeze, #75). |
 | **v0.3.0** "reviewed" | The fidelity sheet is checked against the 2009 journal paper and Islam et al. ([#21](https://github.com/swarm-routing/HOPNET/issues/21)); the perf follow-ups land ([#41](https://github.com/swarm-routing/HOPNET/issues/41), [#42](https://github.com/swarm-routing/HOPNET/issues/42)); any new mechanism is default-off with its own A/B. |
 | **v1.0.0** | Wire format and `core/` API frozen; a released run is recorded in the benchmarks global suite. |
 
