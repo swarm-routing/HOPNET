@@ -55,7 +55,7 @@ jobs:
         swarm-core=swarm-routing/swarm-adapter-ns3@v2.0.0
         routing-bench=swarm-routing/ns3-tools@v1.0.0:ns3/routing-bench
       canary-dependencies: |
-        swarm-core=swarm-routing/ns3-swarm-core@main
+        swarm-core=swarm-routing/swarm-adapter-ns3@main
         routing-bench=swarm-routing/ns3-tools@main:ns3/routing-bench
       ns3-versions: ${{ inputs.ns3-versions || '["latest"]' }}
       profiles: ${{ inputs.ns3-versions != '' && inputs.profiles || '["debug", "sanitized"]' }}
