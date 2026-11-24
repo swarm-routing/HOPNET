@@ -8,8 +8,9 @@
 # 20 seeds (1-20) in two jobs of 10 per cell (blocks: --firstRun=1 and 11; a
 # grid-rwp seed took 244 s on one core, #5, so 20 in one job would come close
 # to the 6 h job ceiling on a slower runner). Both arms run on ns3-dev
-# 3.48-optimized (fb7596b) by digest: ns-3's release profile, the image the
-# anchor runs on.
+# 3.49-optimized (e0719a5) by digest: ns-3's release profile on the release
+# ns-3 supports (swarm-routing/sim-containers#254). The pilots stay on
+# 3.48-optimized (fb7596b), the image their recorded numbers were measured on.
 #
 # For a PR: copy this plan, set `generation` to a new id and `pins` to the
 # PR's base and head commits, then (ns3-tools checked out next to this repo):
@@ -38,7 +39,7 @@ workflow: benchmark-cell.yml
 program: routing-compare
 cap: 4
 control: base
-image: ghcr.io/swarm-routing/ns3-dev@sha256:5585a93c5cea1980592539e2d26a4e111e0ff4b0cc63b3dfd6ea5de459d80d3f
+image: ghcr.io/swarm-routing/ns3-dev@sha256:2fb198aa6761595b09716e347d1690f8fe6061dc88acd3e6b0f8cb47e4d70c96
 pins:
   base: {source_sha: b373da2370e852e3097eafec2b88996ef5e2a445}
   head: {source_sha: 59d9f561b8534c891e3b6adc0aa2e128827a63f2}
