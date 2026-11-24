@@ -27,12 +27,17 @@
 #   $C verdicts $P --dir ".campaign/$G/cells"
 #
 # `verdicts` prints the paired 95 % CI of head minus base per cell
-# (bench_parse --ab --proto hopnet). The pins below are the first pair: base
-# b373da2 (#85, the ns-3 module) and head 59d9f56 (main when this plan was
-# written: #98's input guards, #99's IntraRT neighbour timeout, the swarm-core
-# pin 6966421); dispatch it for #28's first acceptance box (about 5.4
-# runner-hours, #5).
-generation: smoke-59d9f56
+# (bench_parse --ab --proto hopnet). The pins below are the first pair
+# dispatched, for #28's first acceptance box (about 5.4 runner-hours, #5):
+# base 721c54a (#213, the last change to core/ or ns3/) and head 47db292
+# (main on 2026-11-24). core/ and ns3/ are identical at the two, so the
+# verdicts must read no change; the run checks the pipeline on the
+# swarm-adapter-ns3 v2.0.0 dependency set and records HOPNET's 20-seed
+# delivery on both families. The plan's first pair (base b373da2, #85; head
+# 59d9f56) was never dispatched: both predate #212, so their ns3/CMakeLists.txt
+# stops with a fatal error on that dependency set (the adapter has no core/
+# since swarm-routing/swarm-adapter-ns3#258).
+generation: smoke-47db292
 ref: main
 repo: swarm-routing/HOPNET
 workflow: benchmark-cell.yml
@@ -41,8 +46,8 @@ cap: 4
 control: base
 image: ghcr.io/swarm-routing/ns3-dev@sha256:2fb198aa6761595b09716e347d1690f8fe6061dc88acd3e6b0f8cb47e4d70c96
 pins:
-  base: {source_sha: b373da2370e852e3097eafec2b88996ef5e2a445}
-  head: {source_sha: 59d9f561b8534c891e3b6adc0aa2e128827a63f2}
+  base: {source_sha: 721c54abc3218fbcefb32ccfb77cd24fbdb83a84}
+  head: {source_sha: 47db2925dda03a981d442c31882d0f17950d10d5}
 
 arms:
   base: ""
