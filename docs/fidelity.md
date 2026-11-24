@@ -38,7 +38,8 @@ The entries live in [`references.bib`](references.bib); the table is
 generated from it (`fidelity.py bib sources`). [W07] is the primary source,
 the only HOPNET text read in full; its title page is dated December 2007, and
 the University of Manitoba's record gives 2008. [W09] is the journal version;
-it has not been read, and no row cites it (Crossref and Semantic Scholar date
+it was read in part on 2026-11-24 (prose and appendix pseudocode, not its
+equations; *Which version*), and no row cites it yet (Crossref and Semantic Scholar date
 it 2009, OpenAlex 2008, the online-first year). [DDG04] is AntHocNet's
 reference paper and the source of the AntHocNet experiments [W07] §5.4
 compares against (see *The comparison the thesis ran*). [DDG05] is the paper
@@ -55,11 +56,16 @@ Two texts describe HOPNET:
   every row is the thesis's unless it says otherwise.
 - **The journal paper**, [W09] (2009, four authors). It is the published,
   peer-reviewed version and may state what the thesis leaves out (the
-  next-hop selection rule, timer values, ε). We do not hold it. Before `core/`
-  is written, someone with Elsevier access should read [W09] against the
-  `unknown` rows below; any row it settles gets a `[W09]` source, and any
-  place where it disagrees with [W07] needs a stated choice of version
-  (pre-registered in an issue).
+  next-hop selection rule, timer values, ε). It was read in part on
+  2026-11-24: its prose and appendix pseudocode, not its equations
+  ([#21](https://github.com/swarm-routing/HOPNET/issues/21#issuecomment-7143286211)).
+  It gives the next-hop rule's shape (ants explore unvisited neighbours
+  first, then choose by pheromone; data inside a zone takes the
+  highest-pheromone neighbour), and it disagrees with the repo choices on
+  external-ant pheromone and on hello messages. The rows below still
+  describe what `core/` implements; any row [W09] settles gets a `[W09]`
+  source, and any place where it disagrees with [W07] needs a stated choice
+  of version, pre-registered in an issue (#21).
 
 There is no AntHocNet arm to compare with: HOPNET was never implemented in
 AntHocNet (CONTEXT.md), so there is no *Differences from* section.
@@ -182,8 +188,10 @@ AntHocNet numbers are **[DDG04]'s QualNet results, transcribed**, not a
 paired run beside HOPNET. If so, AntHocNet's configuration is recoverable
 only as "the IDSIA implementation of [DDG04], with [DDG04]'s parameters, in
 QualNet", and the two arms differed in simulator, radio model and very
-likely traffic and range. [W09] may say more; until someone reads it, the
-thesis's AntHocNet configuration is **unrecoverable from [W07]** beyond the
+likely traffic and range. [W09], read in part on 2026-11-24, says no more:
+it reuses "the same simulation set up used in the AntHocNet paper" and gives
+no AntHocNet configuration of its own. So the thesis's AntHocNet
+configuration stays **unrecoverable from [W07] and [W09]** beyond the
 scenario.
 
 **The headline trend.** The abstract and ch. 6 claim HOPNET is "highly
