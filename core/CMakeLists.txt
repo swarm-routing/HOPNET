@@ -101,7 +101,7 @@ else()
   find_package(swarm-core CONFIG REQUIRED)
 endif()
 
-# The strict warnings of the org's ns-3 CI (ns3-containers' swarm-quality.cmake),
+# The strict warnings of the org's ns-3 CI (sim-containers' swarm-quality.cmake),
 # on HOPNET's own sources only.
 # A swarm-core deprecation ([[deprecated]], its docs/api-policy.md
 # "Deprecation") stays a warning: it shows in every build, never fails one.

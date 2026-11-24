@@ -135,7 +135,7 @@ this checkout at `/src`; ns-3 is at `/opt/ns-3`, and `ns3-build-contrib
 --help` lists the build options. Set `NS3_IMAGE` for another profile
 (`ghcr.io/swarm-routing/ns3-dev:latest-sanitized`, or a pinned ns-3 release
 such as `3.48-debug`); the images are described in
-swarm-routing/ns3-containers ("Which image"). There is no `.devcontainer/`
+swarm-routing/sim-containers ("Which image"). There is no `.devcontainer/`
 yet.
 
 ## Lint and format
