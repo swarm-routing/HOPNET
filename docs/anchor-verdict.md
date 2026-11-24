@@ -151,7 +151,8 @@ and any one of them could hold the missing points:
 - the internal forward ant's period ([W07] p. 24: "periodically");
 - the neighbour-loss rule (none given);
 - the next-hop selection rule and its exponent β (a declared deviation: ACO
-  roulette, β = 20);
+  roulette, β = 20). From [W07] alone; [W09], read in part on 2026-11-24,
+  gives the rule's shape (What follows);
 - the edge-time measure w (p. 26: "the time period on each edge", no
   measure);
 - query control beyond p. 28's bordercast skip;
@@ -183,9 +184,19 @@ scenario for them."
 ## What follows
 
 - **Reopening.** A new pre-registered anchor would need a source that settles
-  an item of the list above. [W09], the journal version, has not been read
-  ([`fidelity.md`](fidelity.md#sources)); reviewing the sheet against it once
-  it is in hand is #21. No pilot or anchor is planned.
+  an item of the list above. [W09], the journal version
+  ([`fidelity.md`](fidelity.md#sources)), was read in part on 2026-11-24:
+  its prose and appendix pseudocode, without its equations
+  (https://github.com/swarm-routing/HOPNET/issues/21#issuecomment-7143286211).
+  It settles the shape of one listed item, the next-hop rule: ants explore
+  neighbours no ant has yet visited before choosing by pheromone, and data
+  inside a zone takes the highest-pheromone neighbour. It also disagrees
+  with two repo choices (external ants deposit pheromone; neighbours are
+  learnt from hello messages). The scenario, the AntHocNet configuration and
+  the s = 1 area stay open. Those readings, each default-off with its own
+  A/B, are #21's work (v0.3.0); a new pilot would follow only by the
+  maintainer's decision. The verdict above stands: it is about the
+  reconstruction that was piloted.
 - **#113** (AntHocNet pinned at v2.7.0) is no longer an anchor
   prerequisite; it lands as a plain pin bump.
 - **Process.** A dependency pin bump that merges while a campaign is in

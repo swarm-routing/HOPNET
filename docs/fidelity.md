@@ -55,11 +55,16 @@ Two texts describe HOPNET:
   every row is the thesis's unless it says otherwise.
 - **The journal paper**, [W09] (2009, four authors). It is the published,
   peer-reviewed version and may state what the thesis leaves out (the
-  next-hop selection rule, timer values, ε). We do not hold it. Before `core/`
-  is written, someone with Elsevier access should read [W09] against the
-  `unknown` rows below; any row it settles gets a `[W09]` source, and any
-  place where it disagrees with [W07] needs a stated choice of version
-  (pre-registered in an issue).
+  next-hop selection rule, timer values, ε). It was read in part on
+  2026-11-24: its prose and appendix pseudocode, not its equations
+  ([#21](https://github.com/swarm-routing/HOPNET/issues/21#issuecomment-7143286211)).
+  It gives the next-hop rule's shape (ants explore unvisited neighbours
+  first, then choose by pheromone; data inside a zone takes the
+  highest-pheromone neighbour), and it disagrees with the repo choices on
+  external-ant pheromone and on hello messages. The rows below still
+  describe what `core/` implements; any row [W09] settles gets a `[W09]`
+  source, and any place where it disagrees with [W07] needs a stated choice
+  of version, pre-registered in an issue (#21).
 
 There is no AntHocNet arm to compare with: HOPNET was never implemented in
 AntHocNet (CONTEXT.md), so there is no *Differences from* section.
