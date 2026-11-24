@@ -83,7 +83,7 @@ jobs:
       key: ${{ inputs.key }}
       modules: hopnet=ns3
       dependencies: |
-        swarm-core=swarm-routing/ns3-swarm-core@ff097aeb1f6237fb9796ff4713e91524fb5b4d3f
+        swarm-core=swarm-routing/swarm-adapter-ns3@73f8f0de8417c05f97ae9903953e0825202c1f58
         routing-bench=swarm-routing/ns3-tools@3d279b83392a00288050574cee4288f30205658b:ns3/routing-bench
         anthocnet=swarm-routing/AntHocNet@3a01ac8f5f028ac5478261b8b9d37b36565b8f10:ns3/anthocnet
       stage: |
