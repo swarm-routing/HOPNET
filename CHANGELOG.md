@@ -1,3 +1,9 @@
+## v0.2.1 (2026-11-25)
+
+### Fix
+
+- **core**: build the error ant's path without vector::insert (gcc 13 -fpic release) (#233)
+
 ## v0.2.0 (2026-11-24)
 ### Release status
 
