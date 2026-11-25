@@ -36,7 +36,7 @@ jobs:
         with:
           egress-policy: audit
       # a docs-only change skips the steps below; the check still reports (swarm-routing/.github#581)
-      - uses: swarm-routing/.github/.github/actions/changes@ef0827e0b16689747428b2a6025dbaaa81f655d9 # main@2026-11-25
+      - uses: swarm-routing/.github/.github/actions/changes@dd3e7c4131f92dca83e51c4f154ab8eff449caa5 # main@2026-11-25
         id: changes
         timeout-minutes: 2
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,7 +54,7 @@ jobs:
       - name: vcpkg (swarm-routing/.github#489)
         if: steps.changes.outputs.docs-only != 'true'
         id: vcpkg
-        uses: swarm-routing/.github/.github/actions/setup-vcpkg@ef0827e0b16689747428b2a6025dbaaa81f655d9 # main@2026-11-25
+        uses: swarm-routing/.github/.github/actions/setup-vcpkg@dd3e7c4131f92dca83e51c4f154ab8eff449caa5 # main@2026-11-25
         timeout-minutes: 8
         with:
           # The NuGet cache needs mono on the runner (28-50 s to install); the
@@ -123,7 +123,7 @@ jobs:
         with:
           egress-policy: audit
       # a docs-only change skips the steps below; the check still reports (swarm-routing/.github#581)
-      - uses: swarm-routing/.github/.github/actions/changes@ef0827e0b16689747428b2a6025dbaaa81f655d9 # main@2026-11-25
+      - uses: swarm-routing/.github/.github/actions/changes@dd3e7c4131f92dca83e51c4f154ab8eff449caa5 # main@2026-11-25
         id: changes
         timeout-minutes: 2
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
