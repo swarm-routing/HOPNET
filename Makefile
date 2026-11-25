@@ -13,7 +13,7 @@ DOCKERFILE ?= Dockerfile
 BUILD_ARGS ?=
 # swarm-core's core/ at the release swarm-core.lock names (its tag), for the include check.
 SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
-SWARM_CORE_REF ?= v2.0.0
+SWARM_CORE_REF ?= v2.1.0
 # A checkout of swarm-routing/ns3-swarm-core (its main, as ns3.yml) for the ns-3 build.
 SWARM_CORE_NS3 ?= $(CURDIR)/../ns3-swarm-core
 NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_CORE_NS3):/src/ns3-swarm-core:ro" $(NS3_IMAGE) \
