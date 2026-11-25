@@ -72,7 +72,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    uses: swarm-routing/.github/.github/workflows/reusable-benchmark-cell.yml@a3155ab8851bab4a54f41b770f22587afee30f2d # main@2026-11-24
+    uses: swarm-routing/.github/.github/workflows/reusable-benchmark-cell.yml@fba9e07e50d1a8c79f7d3e2d0a3dad2b11c91e19 # main@2026-11-25
     with:
       image: ${{ inputs.image }}
       source_sha: ${{ inputs.source_sha }}
@@ -83,7 +83,7 @@ jobs:
       key: ${{ inputs.key }}
       modules: hopnet=ns3
       dependencies: |
-        swarm-core=swarm-routing/swarm-adapter-ns3@73f8f0de8417c05f97ae9903953e0825202c1f58
+        swarm-core=swarm-routing/swarm-adapter-ns3@bcb8e21f7c707f74a32be0f8eb4a9e41c38343fa
         routing-bench=swarm-routing/ns3-tools@3d279b83392a00288050574cee4288f30205658b:ns3/routing-bench
         anthocnet=swarm-routing/AntHocNet@3a01ac8f5f028ac5478261b8b9d37b36565b8f10:ns3/anthocnet
       stage: |

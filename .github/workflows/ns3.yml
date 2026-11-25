@@ -46,13 +46,13 @@ concurrency:
 
 jobs:
   ci:
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@a3155ab8851bab4a54f41b770f22587afee30f2d # main@2026-11-24
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@fba9e07e50d1a8c79f7d3e2d0a3dad2b11c91e19 # main@2026-11-25
     with:
       modules: hopnet=ns3
       # released versions (swarm-routing/ns3-swarm-core#134); the moving refs in the
       # non-blocking canary leg, outside PRs (swarm-routing/.github#411)
       dependencies: |
-        swarm-core=swarm-routing/swarm-adapter-ns3@v2.0.0
+        swarm-core=swarm-routing/swarm-adapter-ns3@v2.1.0
         routing-bench=swarm-routing/ns3-tools@v1.0.0:ns3/routing-bench
       canary-dependencies: |
         swarm-core=swarm-routing/swarm-adapter-ns3@main
@@ -77,4 +77,4 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@a3155ab8851bab4a54f41b770f22587afee30f2d # main@2026-11-24
+    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@fba9e07e50d1a8c79f7d3e2d0a3dad2b11c91e19 # main@2026-11-25
