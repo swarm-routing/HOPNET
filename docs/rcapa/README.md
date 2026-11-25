@@ -50,6 +50,7 @@ sequenceDiagram
 
 | ID | RCAPA | RCAPA ticket | Fixed in |
 |----|-------|--------------|----------|
+| HOP-001 | [core/ fails a GCC 13 Release -fPIC build](rcapa-errorant-stringop-overflow.md) | [swarm-routing/HOPNET#232](https://github.com/swarm-routing/HOPNET/issues/232) | not yet released |
 
 ## Adding one: the ticket first
 

@@ -270,6 +270,36 @@ void TestRepairFailure(Checker& c) {
         c.check(!z.repairing(T) && o.repairFor == kInvalidAddress, "no repair runs");
     }
     {
+        // The error ant's Path is the prefix <S, D, M> then the old route from
+        // its target <U, T>, within the Path cap: at a cap of 5 it carries all
+        // five, at 4 it is dropped (HOP-001: built without a concatenated copy).
+        for (const std::size_t cap : {std::size_t{5}, std::size_t{4}}) {
+            Config cfg;
+            cfg.maxPathLength = cap;
+            FakeClock clock;
+            FakeLinkState link;
+            SeededRng rng(1);
+            IntraZone intra(cfg, M, clock, link, rng);
+            InterZone z(cfg, intra, clock);
+            neighbours(intra, {D, U});
+            DataHeader h{.source = S,
+                         .destination = T,
+                         .target = U,
+                         .travelled = 3,
+                         .route = {S, D, M, U, T}};
+            const Outcome o = z.onDataSendFailure(h, U);
+            const bool sent = !o.decisions.empty() &&
+                              o.decisions[0].action == RouteAction::Unicast &&
+                              o.decisions[0].message->type == AntType::Error;
+            if (cap == 5)
+                c.check(sent && nodesOf(o.decisions[0].message->path) ==
+                                    std::vector<NodeAddress>{S, D, M, U, T},
+                        "an error ant at the cap carries the whole old route");
+            else
+                c.check(!sent, "an error ant past the cap is not sent");
+        }
+    }
+    {
         // The wait: 5 x the lost path's estimated delay when M's own record
         // runs through the lost segment; that record goes.
         FakeClock clock;
