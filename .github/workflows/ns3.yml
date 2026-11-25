@@ -46,7 +46,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@b77ce0e5ec4db04f3defc146566af642fc5feba1 # main@2026-11-25
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@ef0827e0b16689747428b2a6025dbaaa81f655d9 # main@2026-11-25
     with:
       modules: hopnet=ns3
       # released versions (swarm-routing/ns3-swarm-core#134); the moving refs in the
@@ -77,4 +77,4 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@b77ce0e5ec4db04f3defc146566af642fc5feba1 # main@2026-11-25
+    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@ef0827e0b16689747428b2a6025dbaaa81f655d9 # main@2026-11-25
