@@ -244,22 +244,26 @@ Decision InterZone::errorAnt(const DataHeader& header) {
     // the packet's old route <S ... M, L ... D> (a transit M inserted where it
     // relayed, (m)); back toward S as the notification ant travels.
     const NodeAddress self = intra_.self();
-    std::vector<NodeAddress> path = prefixHere(header);
+    const std::vector<NodeAddress> prefix = prefixHere(header);
     const long target = indexOf(header.route, header.target);
-    if (path.size() < 2 || target < 0) return Decision::drop();
-    const NodeAddress back = path[path.size() - 2];  // the Path node before M
-    path.insert(path.end(), header.route.begin() + target, header.route.end());
+    if (prefix.size() < 2 || target < 0) return Decision::drop();
+    const NodeAddress back = prefix[prefix.size() - 2];  // the Path node before M
     Ant e{.type = AntType::Error,
           .source = self,
-          .destination = path.front(),
+          .destination = prefix.front(),
           .seq = intra_.nextSeq(),
           .hops = 0,
           .time = 0.0,
           .path = VisitedPath(config_.maxPathLength),
           .target = back,
           .travelled = 0};
-    for (NodeAddress node : path)
+    // The prefix, then the old route from its target, pushed straight into
+    // the Path: no concatenated copy (its vector::insert tripped GCC 13's
+    // -Wstringop-overflow under -fPIC -O2/-O3, the vcpkg port's flags; HOP-001).
+    for (NodeAddress node : prefix)
         if (!e.path.push(node, 0.0)) return Decision::drop();
+    for (auto it = header.route.begin() + target; it != header.route.end(); ++it)
+        if (!e.path.push(*it, 0.0)) return Decision::drop();
     return relay(std::move(e), false);
 }
 

@@ -72,6 +72,17 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$PWD/build/vcpkg_installed"
           cmake --build build/core -j
           ctest --test-dir build/core --output-on-failure
+      # The vcpkg port builds Release with -fPIC (-O3): GCC's optimiser warns
+      # there where the Debug build cannot (HOP-001, swarm-routing/vcpkg-registry#80)
+      - name: Build (strict warnings as errors) and test in Release with -fPIC, as the vcpkg port builds
+        if: steps.changes.outputs.docs-only != 'true'
+        env:
+          TOOLCHAIN: ${{ steps.vcpkg.outputs.toolchain }}
+        run: |
+          cmake -S core -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fPIC \
+            -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DVCPKG_INSTALLED_DIR="$PWD/build/vcpkg_installed"
+          cmake --build build/release -j
+          ctest --test-dir build/release --output-on-failure
       - name: clang-tidy (org .clang-tidy, findings are errors; core/ sources, tests excluded; swarm-routing/.github#635)
         if: steps.changes.outputs.docs-only != 'true'
         timeout-minutes: 5
