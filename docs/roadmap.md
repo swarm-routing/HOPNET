@@ -129,5 +129,6 @@ template refreshes (org-bot), settings as code, and the epic lists.
 Every published release with its Zenodo version DOI, read from Zenodo by swarm-routing/.github `tools/zenodo/zenodo.py shipped` (org-bot's `release-aftercare` task); never edit the block by hand.
 
 <!-- releases:shipped:begin (zenodo.py shipped --write; never edit by hand) -->
+- **v0.2.0** shipped 2026-11-25 ([release](https://github.com/swarm-routing/HOPNET/releases/tag/v0.2.0), Zenodo version DOI [10.5281/zenodo.24518727](https://doi.org/10.5281/zenodo.24518727))
 - **v0.1.0** shipped 2026-11-11 ([release](https://github.com/swarm-routing/HOPNET/releases/tag/v0.1.0), Zenodo version DOI [10.5281/zenodo.24125266](https://doi.org/10.5281/zenodo.24125266))
 <!-- releases:shipped:end -->
