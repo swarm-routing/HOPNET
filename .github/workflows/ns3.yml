@@ -52,7 +52,7 @@ jobs:
       # released versions (swarm-routing/ns3-swarm-core#134); the moving refs in the
       # non-blocking canary leg, outside PRs (swarm-routing/.github#411)
       dependencies: |
-        swarm-core=swarm-routing/swarm-adapter-ns3@v2.1.0
+        swarm-core=swarm-routing/swarm-adapter-ns3@v2.2.0
         routing-bench=swarm-routing/ns3-tools@v1.0.0:ns3/routing-bench
       canary-dependencies: |
         swarm-core=swarm-routing/swarm-adapter-ns3@main
