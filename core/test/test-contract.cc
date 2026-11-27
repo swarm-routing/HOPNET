@@ -14,11 +14,19 @@
 // packet to node 5 (outside its radius-2 zone, so a discovery with its
 // random query-processing delay, #5 (t)) every second from t = 3 s.
 //
-// ZeroTtlAndSelfLoopPacketsAreDropped is skipped (ContractSpec::hopLimited
-// unset): HOPNET's messages carry no hop limit in the suite's sense. Data and
-// external ants count the hops travelled up to Config::maxHopsTravelled();
-// an internal forward ant's budget at 0 is not a drop but turns the ant into
-// a backward ant at the zone's edge ([W07] p. 25).
+// ZeroTtlAndSelfLoopPacketsAreDropped probes the internal forward ant, the
+// one HOPNET message with a hop limit in the suite's sense: Hops starts at the
+// zone radius and loses one per hop (docs/fidelity.md rows "Internal forward
+// ants are sent periodically ...", "How an internal forward ant moves past the
+// first hop" and "Internal forward ant hop limit", [W07] p. 25). An ant that
+// arrives with Hops 0, or whose Path already holds the receiver (a loop), is
+// dropped untouched (IntraZone::onInternalForward); the backward ant starts
+// only where an ant arrives with Hops 1 ([W07] p. 26). External ants and data
+// carry no hop limit in [W07] (row "External forward ants carry no hop limit";
+// `travelled` is a repo safety cap, row "Hops an external ant or a data packet
+// may travel"), so they are not the probe. The live control's hop limit is the
+// zone radius: the suite's default 8 is above it, which the core rejects as
+// malformed, and so would not be live.
 #include "../hopnet-ant.h"
 #include "../hopnet-config.h"
 #include "../hopnet-data.h"
@@ -222,5 +230,25 @@ int main() {
     };
     spec.kindOf = kindOf;
     spec.payloadHash = payloadHash;
+    // The suite hands the probe to node 1 from node 0, so its Path ends at 0;
+    // the origin's own loop is origin -> 0 -> 1. Internal forward ants have
+    // no destination ([W07] p. 25), and the sequence number is one the
+    // scene's 10 s never reach.
+    spec.hopLimited = [](NodeAddress origin, NodeAddress /*dest*/, int hopLimit) {
+        constexpr NodeAddress kSender = 0;
+        constexpr Time kHop = 0.001;
+        Ant ant{.type = AntType::InternalForward,
+                .source = origin,
+                .seq = 0xFFFFFFFFu,
+                .hops = static_cast<std::uint16_t>(hopLimit),
+                .time = kHop};
+        ant.path.push(origin, 0.0);
+        if (origin != kSender) {
+            ant.time += kHop;
+            ant.path.push(kSender, kHop);
+        }
+        return Frame{ant, std::nullopt};
+    };
+    spec.liveHopLimit = kConfig.zoneRadius;
     return tb::runProtocolContract(spec) == 0 ? 0 : 1;
 }
