@@ -18,7 +18,7 @@ SWARM_CORE_REF ?= v2.1.0
 # at the release tag ns3.yml's `dependencies:` names (SWARM_ADAPTER_REF), as CI builds on.
 # A missing checkout is cloned there at that tag; SWARM_ADAPTER_NS3=<checkout> uses another one.
 SWARM_ADAPTER_NS3 ?= $(CURDIR)/../swarm-adapter-ns3
-SWARM_ADAPTER_REF ?= $(shell sed -nE 's#^[[:space:]]*swarm-core=swarm-routing/swarm-adapter-ns3@(v[^[:space:]]+)[[:space:]]*$$#\1#p' .github/workflows/ns3.yml | head -n 1)
+SWARM_ADAPTER_REF ?= $(shell sed -nE 's#^[[:space:]]*swarm-core=swarm-routing/swarm-adapter-ns3@(v[^[:space:]]+)[[:space:]]*$$#\1#p' .github/workflows/ns3.yml 2>/dev/null | head -n 1)
 NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_ADAPTER_NS3):/src/swarm-adapter-ns3:ro" $(NS3_IMAGE) \
 	ns3-build-contrib --strict-warnings --quality-modules hopnet
 
@@ -35,8 +35,10 @@ test: core-test swarm-adapter ## the fast tests CI runs on every PR
 	$(NS3_RUN) --test swarm-core=/src/swarm-adapter-ns3 hopnet=/src/hopnet/ns3
 
 swarm-adapter:  # SWARM_ADAPTER_NS3 at SWARM_ADAPTER_REF: cloned if missing, a warning if it is on another commit
-	@[ -n "$(SWARM_ADAPTER_REF)" ] || { echo "make: no swarm-adapter-ns3 release tag in ns3.yml's dependencies:" >&2; exit 2; }
-	@if [ -e "$(SWARM_ADAPTER_NS3)" ]; then \
+	@if [ -z "$(SWARM_ADAPTER_REF)" ]; then \
+	  [ -e "$(SWARM_ADAPTER_NS3)" ] || { echo "make: no swarm-adapter-ns3 tag (ns3.yml missing, as in a release archive?): pass SWARM_ADAPTER_REF=<tag> or SWARM_ADAPTER_NS3=<checkout>" >&2; exit 2; }; \
+	  echo "make: no swarm-adapter-ns3 tag to check (ns3.yml missing): building on $(SWARM_ADAPTER_NS3) as it is" >&2; \
+	elif [ -e "$(SWARM_ADAPTER_NS3)" ]; then \
 	  want=$$(git -C "$(SWARM_ADAPTER_NS3)" rev-parse -q --verify "refs/tags/$(SWARM_ADAPTER_REF)^{commit}" 2>/dev/null); \
 	  have=$$(git -C "$(SWARM_ADAPTER_NS3)" rev-parse -q --verify HEAD 2>/dev/null); \
 	  [ -n "$$want" ] && [ "$$want" = "$$have" ] || echo "make: $(SWARM_ADAPTER_NS3) is not at $(SWARM_ADAPTER_REF), the tag CI builds on: building on it as it is" >&2; \
