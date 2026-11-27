@@ -12,24 +12,39 @@ PLATFORM  ?=
 DOCKERFILE ?= Dockerfile
 BUILD_ARGS ?=
 # swarm-core's core/ at the release swarm-core.lock names (its tag), for the include check.
-SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/ns3-swarm-core
+SWARM_CORE_SRC ?= $(HOME)/.cache/swarm-routing/swarm-core
 SWARM_CORE_REF ?= v2.1.0
-# A checkout of swarm-routing/ns3-swarm-core (its main, as ns3.yml) for the ns-3 build.
-SWARM_CORE_NS3 ?= $(CURDIR)/../ns3-swarm-core
-NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_CORE_NS3):/src/ns3-swarm-core:ro" $(NS3_IMAGE) \
+# The ns-3 module `swarm-core` for the ns-3 build: a checkout of swarm-routing/swarm-adapter-ns3
+# at the release tag ns3.yml's `dependencies:` names (SWARM_ADAPTER_REF), as CI builds on.
+# A missing checkout is cloned there at that tag; SWARM_ADAPTER_NS3=<checkout> uses another one.
+SWARM_ADAPTER_NS3 ?= $(CURDIR)/../swarm-adapter-ns3
+SWARM_ADAPTER_REF ?= $(shell sed -nE 's#^[[:space:]]*swarm-core=swarm-routing/swarm-adapter-ns3@(v[^[:space:]]+)[[:space:]]*$$#\1#p' .github/workflows/ns3.yml 2>/dev/null | head -n 1)
+NS3_RUN = docker run --rm -v "$(CURDIR):/src/hopnet:ro" -v "$(SWARM_ADAPTER_NS3):/src/swarm-adapter-ns3:ro" $(NS3_IMAGE) \
 	ns3-build-contrib --strict-warnings --quality-modules hopnet
 
 .DEFAULT_GOAL := help
-.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core dist
+.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test swarm-core swarm-adapter dist
 
 help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## build what this repo ships
-	$(NS3_RUN) swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
+build: swarm-adapter ## build what this repo ships
+	$(NS3_RUN) swarm-core=/src/swarm-adapter-ns3 hopnet=/src/hopnet/ns3
 
-test: core-test ## the fast tests CI runs on every PR
-	$(NS3_RUN) --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
+test: core-test swarm-adapter ## the fast tests CI runs on every PR
+	$(NS3_RUN) --test swarm-core=/src/swarm-adapter-ns3 hopnet=/src/hopnet/ns3
+
+swarm-adapter:  # SWARM_ADAPTER_NS3 at SWARM_ADAPTER_REF: cloned if missing, a warning if it is on another commit
+	@if [ -z "$(SWARM_ADAPTER_REF)" ]; then \
+	  [ -e "$(SWARM_ADAPTER_NS3)" ] || { echo "make: no swarm-adapter-ns3 tag (ns3.yml missing, as in a release archive?): pass SWARM_ADAPTER_REF=<tag> or SWARM_ADAPTER_NS3=<checkout>" >&2; exit 2; }; \
+	  echo "make: no swarm-adapter-ns3 tag to check (ns3.yml missing): building on $(SWARM_ADAPTER_NS3) as it is" >&2; \
+	elif [ -e "$(SWARM_ADAPTER_NS3)" ]; then \
+	  want=$$(git -C "$(SWARM_ADAPTER_NS3)" rev-parse -q --verify "refs/tags/$(SWARM_ADAPTER_REF)^{commit}" 2>/dev/null); \
+	  have=$$(git -C "$(SWARM_ADAPTER_NS3)" rev-parse -q --verify HEAD 2>/dev/null); \
+	  [ -n "$$want" ] && [ "$$want" = "$$have" ] || echo "make: $(SWARM_ADAPTER_NS3) is not at $(SWARM_ADAPTER_REF), the tag CI builds on: building on it as it is" >&2; \
+	else \
+	  git -c advice.detachedHead=false clone -q --depth 1 --branch "$(SWARM_ADAPTER_REF)" https://github.com/swarm-routing/swarm-adapter-ns3 "$(SWARM_ADAPTER_NS3)"; \
+	fi
 
 # The org .clang-format unless this repo ships its own, as CI's format check.
 CLANG_STYLE = $(if $(wildcard .clang-format),file,file:$(ORG_DIR)/.clang-format)
