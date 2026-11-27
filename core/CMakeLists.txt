@@ -147,8 +147,15 @@ if(HOPNET_CORE_TESTS)
   target_link_libraries(hopnet_core_tests PRIVATE hopnet_core)
   target_compile_options(hopnet_core_tests PRIVATE ${HOPNET_WARNINGS})
 
+  # swarm-core's protocol contract suite (its testbench/swarm-contract-tests.h,
+  # header-only) on HOPNET's core: a ctest executable of its own (#188).
+  add_executable(hopnet_core_contract test/test-contract.cc)
+  target_link_libraries(hopnet_core_contract PRIVATE hopnet_core)
+  target_compile_options(hopnet_core_contract PRIVATE ${HOPNET_WARNINGS})
+
   enable_testing()
   add_test(NAME hopnet-core COMMAND hopnet_core_tests)
+  add_test(NAME hopnet-contract COMMAND hopnet_core_contract)
 endif()
 
 if(HOPNET_CORE_INSTALL)
