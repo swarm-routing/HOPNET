@@ -38,18 +38,19 @@ tools/bench/campaigns/  campaign plans: smoke.yaml (the change-test smoke agains
 
 ## Build & verify
 
-CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, clang-tidy with the org `.clang-tidy` (findings as errors), again under ASan + UBSan; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks, and `.github/workflows/ns3.yml`: [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) builds `ns3/` in `ns3-dev:latest-{debug,sanitized}` with strict warnings and coverage (Sonar off until the repository has a project, swarm-routing/.github#104), with `dependencies: swarm-core=swarm-routing/ns3-swarm-core@<swarm-core.lock's tag>` and `routing-bench=swarm-routing/ns3-tools@<an ns3-tools release>:ns3/routing-bench` (releases; the same at `@main` in `canary-dependencies`, a non-blocking leg outside PRs), runs `test.py -s hopnet`, `routing-compare --scenario=paper --nNodes=20 --time=30 --runs=1 --protocols=hopnet` as the delivery smoke and `hopnet-example --seed={seed}` as the determinism program. Locally:
+CI today is `.github/workflows/core.yml` (`core-test`: `core/` with strict warnings as errors and ctest, clang-tidy with the org `.clang-tidy` (findings as errors), again under ASan + UBSan; `core-format`: clang-format-18 with the org style), plus the licence, org-sync and PR-title checks, and `.github/workflows/ns3.yml`: [`reusable-ns3-ci.yml`](https://github.com/swarm-routing/.github/blob/main/.github/workflows/reusable-ns3-ci.yml) builds `ns3/` in `ns3-dev:latest-{debug,sanitized}` with strict warnings and coverage (Sonar off until the repository has a project, swarm-routing/.github#104), with `dependencies: swarm-core=swarm-routing/swarm-adapter-ns3@<a swarm-adapter-ns3 release>` and `routing-bench=swarm-routing/ns3-tools@<an ns3-tools release>:ns3/routing-bench` (releases; the same at `@main` in `canary-dependencies`, a non-blocking leg outside PRs), runs `test.py -s hopnet`, `routing-compare --scenario=paper --nNodes=20 --time=30 --runs=1 --protocols=hopnet` as the delivery smoke and `hopnet-example --seed={seed}` as the determinism program. Locally:
 
 ```bash
 make core-test VCPKG_ROOT=/path/to/vcpkg   # core/ alone: cmake -S core -B build/core -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake, build, ctest
 cmake -S core -B build/sanitized -DHOPNET_CORE_SANITIZE=ON -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" && cmake --build build/sanitized && ctest --test-dir build/sanitized   # as CI
-cmake -S core -B build/local -DSWARM_CORE_DIR=/path/to/ns3-swarm-core/core   # a local swarm-core instead of the port
+cmake -S core -B build/local -DSWARM_CORE_DIR=/path/to/swarm-core/core   # a local swarm-core instead of the port
 make help    # the org's standard target names: build, test, lint, format, check, clean, shell, ci
 make check   # everything CI gates on
-make test    # core-test, then the ns-3 module in ns3-dev:latest-debug (SWARM_CORE_NS3=<checkout>, default ../ns3-swarm-core):
-docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../ns3-swarm-core:/src/ns3-swarm-core:ro" \
+make test    # core-test, then the ns-3 module in ns3-dev:latest-debug on swarm-adapter-ns3 at ns3.yml's `dependencies:` tag
+             # (SWARM_ADAPTER_NS3=<checkout>, default ../swarm-adapter-ns3, cloned at that tag if missing):
+docker run --rm -v "$PWD:/src/hopnet:ro" -v "$PWD/../swarm-adapter-ns3:/src/swarm-adapter-ns3:ro" \
     ghcr.io/swarm-routing/ns3-dev:latest-debug \
-    ns3-build-contrib --strict-warnings --quality-modules hopnet --test swarm-core=/src/ns3-swarm-core hopnet=/src/hopnet/ns3
+    ns3-build-contrib --strict-warnings --quality-modules hopnet --test swarm-core=/src/swarm-adapter-ns3 hopnet=/src/hopnet/ns3
 ```
 
 Benchmarks (#28, swarm-routing/.github#156): change tests and the anchor
